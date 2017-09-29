@@ -25,6 +25,16 @@ namespace CPPbook
 		}
 	}
 	
+	void Fraction::print() const
+	{
+		std::cout << numer << '/' << denom << std::endl;
+	}
+	
+	Fraction Fraction::operator * ( const Fraction& f ) const
+	{
+		return Fraction( numer*f.numer, denom*f.denom );
+	}
+	
 	//set fraction equal to itself times incoming fraction:
 	const Fraction& Fraction::operator *= ( const Fraction& f )
 	{

@@ -27,15 +27,15 @@ namespace CPPbook
 			
 	};
 	
-	inline void Fraction::print() const
-	{
-		std::cout << numer << '/' << denom << std::endl;
-	}
+	// inline void Fraction::print() const
+	// {
+		// std::cout << numer << '/' << denom << std::endl;
+	// }
 	
-	inline Fraction Fraction::operator * ( const Fraction& f ) const
-	{
-		return Fraction( numer*f.numer, denom*f.denom );
-	}
+	// inline Fraction Fraction::operator * ( const Fraction& f ) const
+	// {
+		// return Fraction( numer*f.numer, denom*f.denom );
+	// }
 	
 }
 
