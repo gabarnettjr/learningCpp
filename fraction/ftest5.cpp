@@ -1,25 +1,27 @@
+#include <iostream>
+#include <cstdlib>
 #include "frac5.hpp"
 
 int main()
 {
 	using namespace CPPbook;
 	
+	const Fraction a(7,3);
 	Fraction x;
-	const Fraction z(3);
-	const Fraction w(7,3);
 	
-	std::cout << "z = " << z << std::endl;
+	std::cout << a << std::endl;
 	
-	std::cout << "w = " << w << std::endl;
-	
-	const Fraction u = ( z >= w );
-	std::cout << "u = " << u << std::endl;
-	
-	x = w * w;
+	std::cout << "Enter fraction (numer/denom):" << std::endl;
+	if( ! ( std::cin >> x ) )
+	{
+		std::cerr << "Error during input of fraction." << std::endl;
+		return EXIT_FAILURE;
+	}
+	std::cout << "Input was: " << x << std::endl;
 	
 	while( x <= Fraction(1000) )
 	{
-		x =  x*w;
+		x =  x*a;
 		std::cout << x << std::endl;
 	}
 }

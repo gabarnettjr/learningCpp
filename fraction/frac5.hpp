@@ -16,7 +16,7 @@ namespace CPPbook
 			Fraction();
 			Fraction( int );
 			Fraction( int, int );
-			// Fraction( int = 0, int = 1 );
+			// Fraction( int = 0, int = 1 );	//weird default thing
 			
 			Fraction operator * ( const Fraction& ) const;
 			
