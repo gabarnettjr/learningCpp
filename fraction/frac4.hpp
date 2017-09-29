@@ -23,7 +23,11 @@ namespace CPPbook
 			
 			bool operator < ( const Fraction& ) const;
 			
+			bool operator <= ( const Fraction& ) const;
+			
 			bool operator > ( const Fraction& ) const;
+			
+			bool operator >= ( const Fraction& ) const;
 			
 	};
 	

@@ -48,10 +48,20 @@ namespace CPPbook
 		return numer*f.denom < f.numer*denom;
 	}
 	
+	bool Fraction::operator <= ( const Fraction& f ) const
+	{
+		return numer*f.denom <= f.numer*denom;
+	}
+	
 	//check if fraction is greater than incoming fraction:
 	bool Fraction::operator > ( const Fraction& f ) const
 	{
 		return numer*f.denom > f.numer*denom;
+	}
+	
+	bool Fraction::operator >= ( const Fraction& f ) const
+	{
+		return numer*f.denom >= f.numer*denom;
 	}
 
 }
