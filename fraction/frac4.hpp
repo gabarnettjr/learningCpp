@@ -15,10 +15,7 @@ namespace CPPbook
 		
 			Fraction( int = 0, int = 1 );
 			
-			void print() const
-			{
-				std::cout << numer << '/' << denom << std::endl;
-			};
+			void print() const;
 			
 			Fraction operator * ( const Fraction& ) const;
 			
@@ -29,6 +26,11 @@ namespace CPPbook
 			bool operator > ( const Fraction& ) const;
 			
 	};
+	
+	inline void Fraction::print() const
+	{
+		std::cout << numer << '/' << denom << std::endl;
+	}
 	
 	inline Fraction Fraction::operator * ( const Fraction& f ) const
 	{
