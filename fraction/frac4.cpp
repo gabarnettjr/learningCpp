@@ -25,12 +25,6 @@ namespace CPPbook
 		}
 	}
 	
-	//print function:
-	// void print() const
-	// {
-		// std::cout << numer << '/' << denom << std::endl;
-	// }
-	
 	//set fraction equal to itself times incoming fraction:
 	const Fraction& Fraction::operator *= ( const Fraction& f )
 	{
