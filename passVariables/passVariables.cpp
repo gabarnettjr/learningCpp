@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <cstdlib>
 
 int main( int argc, char* argv[] )
 {
@@ -8,6 +9,9 @@ int main( int argc, char* argv[] )
 	if( argc > 1 )
 	{
 		std::cout << progName << std::endl << "has " << argc-1 << " parameters:" << std::endl;
+		double x = strtod( argv[1], NULL );
+		double y = strtod( argv[2], NULL );
+		std::cout << "argv[1] + argv[2] = " << x+y << std::endl;
 	}
 	else
 	{

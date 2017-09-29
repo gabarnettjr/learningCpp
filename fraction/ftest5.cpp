@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include "frac5.hpp"
 
-int main()
+int main( int argc, char* argv[] )
 {
 	using namespace CPPbook;
 	
@@ -19,7 +19,7 @@ int main()
 	}
 	std::cout << "Input was: " << x << std::endl;
 	
-	while( x <= Fraction(1000) )
+	while( x <= 1000 )
 	{
 		x =  x*a;
 		std::cout << x << std::endl;
