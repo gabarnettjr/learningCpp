@@ -4,7 +4,8 @@ int main()
 {
 	using namespace CPPbook;
 	
-	const Fraction z(3,2);
+	Fraction x;
+	const Fraction z(3);
 	const Fraction w(7,3);
 	
 	std::cout << "z = ";
@@ -16,11 +17,11 @@ int main()
 	const Fraction u = ( z >= w );
 	u.print();
 	
-	Fraction x = w * w;
+	x = w * w;
 	
 	while( x <= Fraction(1000) )
 	{
-		x *= w;
+		x =  x*w;
 		x.print();
 	}
 }

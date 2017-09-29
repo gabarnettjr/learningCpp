@@ -13,7 +13,10 @@ namespace CPPbook
 
 		public:
 		
-			Fraction( int = 0, int = 1 );
+			// Fraction( int = 0, int = 1 );
+			Fraction();
+			Fraction( int );
+			Fraction( int, int );
 			
 			void print() const;
 			

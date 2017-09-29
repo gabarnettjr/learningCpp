@@ -4,7 +4,19 @@
 namespace CPPbook
 {
 	
-	//Full fraction constructor:
+	//fraction constructor with no inputs:
+	Fraction::Fraction()
+		: numer(0), denom(1)
+	{
+	}
+	
+	//fraction constructor with one input:
+	Fraction::Fraction( int n )
+		: numer(n), denom(1)
+	{
+	}
+	
+	//Full fraction constructor with two inputs:
 	Fraction::Fraction( int n, int d )
 		: numer(n), denom(d)
 	{
