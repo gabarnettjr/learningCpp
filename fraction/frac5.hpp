@@ -18,8 +18,6 @@ namespace CPPbook
 			Fraction( int, int );
 			// Fraction( int = 0, int = 1 );
 			
-			void print() const;
-			
 			Fraction operator * ( const Fraction& ) const;
 			
 			const Fraction& operator *= ( const Fraction& );
@@ -31,17 +29,27 @@ namespace CPPbook
 			bool operator > ( const Fraction& ) const;
 			
 			bool operator >= ( const Fraction& ) const;
+			
+			void printOn( std::ostream& ) const;
+			
+			void scanFrom( std::istream& );
+			
 	};
 	
-	// inline void Fraction::print() const
-	// {
-		// std::cout << numer << '/' << denom << std::endl;
-	// }
+	inline
+	std::ostream& operator << ( std::ostream& strm, const Fraction& f )
+	{
+		f.printOn(strm);
+		return strm;
+	}
 	
-	// inline Fraction Fraction::operator * ( const Fraction& f ) const
-	// {
-		// return Fraction( numer*f.numer, denom*f.denom );
-	// }
+	inline
+	std::istream& operator >> ( std::istream& strm, Fraction& f )
+	{
+		f.scanFrom(strm);
+		return strm;
+	}
+	
 }
 
 #endif

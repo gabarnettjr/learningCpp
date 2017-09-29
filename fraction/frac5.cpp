@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include "frac4.hpp"
+#include "frac5.hpp"
 
 namespace CPPbook
 {
@@ -35,12 +35,6 @@ namespace CPPbook
 			numer = n;
 			denom = d;
 		}
-	}
-	
-	//function to print a fraction:
-	void Fraction::print() const
-	{
-		std::cout << numer << '/' << denom << std::endl;
 	}
 	
 	//function to multiply by a fraction:
@@ -79,5 +73,44 @@ namespace CPPbook
 	{
 		return numer*f.denom >= f.numer*denom;
 	}
-
+	
+	void Fraction::printOn( std::ostream& strm ) const
+	{
+		strm << numer << '/' << denom;
+	}
+	
+	void Fraction::scanFrom( std::istream& strm )
+	{
+		int n, d;
+		strm >> n;
+		if( strm.peek() == '/' )
+		{
+			strm.get();
+			strm >> d;
+		}
+		else
+		{
+			d = 1;
+		}
+		if( ! strm )
+		{
+			return;
+		}
+		if( d == 0 )
+		{
+			strm.clear( strm.rdstate() | std::ios::failbit );
+			return;
+		}
+		if( d < 0 )
+		{
+			numer = -n;
+			denom = -d;
+		}
+		else
+		{
+			numer = n;
+			denom = d;
+		}
+	}
+	
 }
