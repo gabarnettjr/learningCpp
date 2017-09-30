@@ -1,11 +1,9 @@
 #include <iostream>
 #include <string>
-using namespace std;
 
-int main ()
+int main()
 {
-  string mystring;
+  std::string mystring;
   mystring = "This is a string";
-  cout << mystring;
-  return 0;
+  std::cout << mystring;
 }
