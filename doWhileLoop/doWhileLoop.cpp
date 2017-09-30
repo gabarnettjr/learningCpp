@@ -13,6 +13,6 @@ int main()
 	while( x < 15 )
 	{
 		std::cout << "x: " << x << std::endl;
-		++x;
+		x++;
 	}
 }
