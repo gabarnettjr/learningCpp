@@ -6,16 +6,16 @@
 
 #include <string>
 
-void getVec( std::string, double[] );
+//void getVec( std::string, double[] );
 
 void getMat( std::string, double[] );
 
-void getArray( std::string, int&, int&, int&, double[] );
+//void getArray( std::string, int&, int&, int&, double[] );
 
-int getDims( std::string );
+//int getDims( std::string );
 
-int getRows( std::string );
+//int getRows( std::string );
 
-int getCols( std::string );
+//int getCols( std::string );
 
 #endif
