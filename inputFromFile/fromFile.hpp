@@ -14,8 +14,8 @@ void getMat( std::string, double[] );
 
 //int getDims( std::string );
 
-//int getRows( std::string );
+int getRows( std::string );
 
-//int getCols( std::string );
+int getCols( std::string );
 
 #endif

@@ -60,23 +60,23 @@ void getMat( std::string fileName, double x[] )
 //	inFile.close();
 //	return d;
 //}
-//
-//int getRows( std::string fileName )
-//{
-//	int d, m;
-//	std::ifstream inFile;
-//	inFile.open( fileName );
-//	inFile >> d >> m;
-//	inFile.close();
-//	return m;
-//}
-//
-//int getCols( std::string fileName )
-//{
-//	int d, m, n;
-//	std::ifstream inFile;
-//	inFile.open( fileName );
-//	inFile >> d >> m >> n;
-//	inFile.close();
-//	return n;
-//}
+
+int getRows( std::string fileName )
+{
+	int m;
+	std::ifstream inFile;
+	inFile.open( fileName );
+	inFile >> m;
+	inFile.close();
+	return m;
+}
+
+int getCols( std::string fileName )
+{
+	int n;
+	std::ifstream inFile;
+	inFile.open( fileName );
+	inFile >> n >> n;
+	inFile.close();
+	return n;
+}
