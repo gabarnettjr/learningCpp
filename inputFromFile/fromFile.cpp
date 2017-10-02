@@ -20,9 +20,31 @@ void getMat( std::string fileName, double x[] )
 {
 	std::ifstream inFile;
 	inFile.open( fileName );
-	int d, m, n;
-	inFile >> d >> m >> n;
+	int m, n;
+	inFile >> m >> n;
 	for( int i=0; i<m*n; i++ )
+	{
+		inFile >> x[i];
+	}
+	inFile.close();
+}
+
+void getArray( std::string fileName, int& d, int& m, int& n, double x[] )
+{
+	int N;
+	std::ifstream inFile;
+	inFile.open( fileName );
+	inFile >> d >> m;
+	if( d == 1 )
+	{
+		N = m;
+	}
+	else if( d == 2 )
+	{
+		inFile >> n;
+		N = m*n;
+	}
+	for( int i=0; i<N; i++ )
 	{
 		inFile >> x[i];
 	}

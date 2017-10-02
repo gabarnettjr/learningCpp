@@ -10,6 +10,8 @@ void getVec( std::string, double[] );
 
 void getMat( std::string, double[] );
 
+void getArray( std::string, int&, int&, int&, double[] );
+
 int getDims( std::string );
 
 int getRows( std::string );
