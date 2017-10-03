@@ -1,8 +1,8 @@
 //fromFile.hpp
-//#ifndef FROMFILE_HPP
-//#define FROMFILE_HPP
-#ifndef fromFile_hpp
-#define fromFile_hpp
+#ifndef FROMFILE_HPP
+#define FROMFILE_HPP
+//#ifndef fromFile_hpp
+//#define fromFile_hpp
 
 #include <string>
 
