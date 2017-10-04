@@ -1,6 +1,6 @@
-//frac5.cpp
+//frac6.cpp
 #include <cstdlib>
-#include "frac5.hpp"
+#include "frac6.hpp"
 
 namespace CPPbook
 {
@@ -38,11 +38,11 @@ namespace CPPbook
 		}
 	}
 	
-	//function to multiply by a fraction:
-	Fraction Fraction::operator * ( const Fraction& f ) const
-	{
-		return Fraction( numer*f.numer, denom*f.denom );
-	}
+//	//function to multiply by a fraction:
+//	Fraction Fraction::operator * ( const Fraction& f ) const
+//	{
+//		return Fraction( numer*f.numer, denom*f.denom );
+//	}
 	
 	//set fraction equal to itself times incoming fraction:
 	const Fraction& Fraction::operator *= ( const Fraction& f )

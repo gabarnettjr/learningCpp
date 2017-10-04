@@ -1,3 +1,4 @@
+//frac5.hpp
 #ifndef FRACTION_HPP
 #define FRACTION_HPP
 
@@ -8,7 +9,9 @@ namespace CPPbook
 	class Fraction
 	{
 		private:
+
 			int numer;
+
 			int denom;
 
 		public:
@@ -16,7 +19,7 @@ namespace CPPbook
 			Fraction();
 			Fraction( int );
 			Fraction( int, int );
-			// Fraction( int = 0, int = 1 );	//weird default thing
+			//Fraction( int = 0, int = 1 );	//weird default thing
 			
 			Fraction operator * ( const Fraction& ) const;
 			
@@ -33,7 +36,6 @@ namespace CPPbook
 			void printOn( std::ostream& ) const;
 			
 			void scanFrom( std::istream& );
-			
 	};
 	
 	inline
