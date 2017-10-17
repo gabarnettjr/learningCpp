@@ -42,6 +42,15 @@ int main( int argc, char * argv[] )
 					std::cout << "A[" << i << "][" << j << "] = " << A[i][j] << std::endl;
 				}
 			}
+			std::vector< std::vector<std::vector<double>> > B;
+			B.push_back(A);
+			for( int i=0; i<3; i++ )
+			{
+				for( int j=0; j<n; j++ )
+				{
+					std::cout << "B[0][" << i << "][" << j << "] = " << B[0][i][j] << std::endl;
+				}
+			}
 		}
 	}
 	return 0;
