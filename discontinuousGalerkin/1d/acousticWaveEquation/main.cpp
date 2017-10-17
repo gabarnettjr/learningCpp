@@ -5,7 +5,7 @@ int main()
 {
 	double a = -1.;
 	double b = 1.;
-	int np = 3;
+	int np = 4;
 	int ne = 4;
 
 	//Element boundary points:
@@ -56,11 +56,11 @@ int main()
 			X[np*i+j] = xc[i] + dx/2 * xGLL[j];
 		}
 	}
-	////Print X to make sure it is correct:
-	//for( int i=0; i<N; i++ )
-	//{
-	//	std::cout << "X[" << i << "] = " << X[i] << std::endl;
-	//}
+	//Print X to make sure it is correct:
+	for( int i=0; i<N; i++ )
+	{
+		std::cout << "X[" << i << "] = " << X[i] << std::endl;
+	}
 	
 
 }
