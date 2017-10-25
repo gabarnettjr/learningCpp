@@ -2,6 +2,8 @@
 #include <cmath>
 #include <string>
 #include <fstream>
+#include <sstream>
+#include <iomanip>
 
 //This is a program to solve the 1d periodic transport equation.
 
@@ -24,10 +26,10 @@ int main()
     const double a = -1.;                         //left endpoint
     const double b = 1.;                          //right endpoint
     const int np = 4;                             //number of polynomials per element
-    const int ne = 16;                            //number of elements
+    const int ne = 4;                            //number of elements
     double t = 0.;
-    const double dt = 1./100.;
-    const int nTimesteps = 200;
+    const double dt = 1./50.;
+    const int nTimesteps = 100;
     
     int i, j, k;
 
@@ -128,37 +130,50 @@ int main()
     
     //Open filestream for saving things:
     std::ofstream outFile;
-    outFile.open( "out.txt" );
+    outFile.open( "u.txt" );
+
+    int pr = 16;
 
     //Save the constant velocity u:
-    outFile << "u:\n";
-    outFile << u << "\n\n";
+    outFile << std::scientific << std::setprecision(pr) << u;
+    outFile.close();
 
     //Save start time:
-    outFile << "t:\n";
-    outFile << t << "\n\n";
+    outFile.open( "t.txt" );
+    outFile << t;
+    outFile.close();
 
     //Save time increment:
-    outFile << "dt:\n";
-    outFile << dt << "\n\n";
+    outFile.open( "dt.txt" );
+    outFile << dt;
+    outFile.close();
 
     //Save number of time-steps:
-    outFile << "nTimesteps:\n";
-    outFile << nTimesteps << "\n\n";
+    outFile.open( "nTimesteps.txt" );
+    outFile << nTimesteps;
+    outFile.close();
 
     //save vector of all x-coordinates:
-    outFile << "x:\n";
+    outFile.open( "x.txt" );
     for( i=0; i<N-1; i++ ) {
         outFile << x[i] << " ";
     }
-    outFile << x[N-1] << "\n\n";
+    outFile << x[N-1];
+    outFile.close();
 
     //save vector of rho values at initial time:
-    outFile << "rho:\n";
+    outFile.open( "./snapshots/00000.txt" );
     for( i=0; i<N-1; i++ ) {
         outFile << rho[i] << " ";
     }
-    outFile << rho[N-1] << "\n";
+    outFile << rho[N-1];
+    outFile.close();
+
+    std::stringstream s;
+    s << "./snapshots/" <<  std::setfill('0') << std::setw(5) << 5 << ".txt";
+    outFile.open( s.str() );
+    outFile << rho[2];
+    outFile.close();
     
     //Time stepping:
     double s1[N];
@@ -168,9 +183,16 @@ int main()
     for( k=0; k<nTimesteps; k++ ) {
         rk( ne, np, u, t, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4 );
         t = t + dt;
+        std::stringstream s;
+        s << "./snapshots/" << std::setfill('0') << std::setw(5) << k+1 << ".txt";
+        outFile.open( s.str() );
         for( i=0; i<N-1; i++ ) {
             outFile << rho[i] << " ";
         }
-        outFile << rho[N-1] << "\n";
+        outFile << rho[N-1];
+        outFile.close();
     }
+
+    ////messing around to figure out how to print things with consistent format:
+    //std::cout << std::scientific << std::setprecision(16) << .0000000123456789012345678 << std::endl;
 }
