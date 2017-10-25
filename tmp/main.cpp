@@ -1,26 +1,19 @@
 #include <iostream>
-#include <string>
 
-void addTwoNumbers( const double& x, const double& y, double& z ) {
-    z = x + y;
-}
+void addNums( const double&, const double&, double& );
 
-void addVecs( const int& n, double X[], double Y[], double Z[] ) {
-    for( int i=0; i<n; i++ ) {
-        Z[i] = X[i] + Y[i];
-    }
-}
+void addVecs( const int&, double[], double[], double[] );
 
 int main()
 {
     double x = 5.;
     double y =3.;
     double z;
-    addTwoNumbers( x, y, z );
+    addNums( x, y, z );
     std::cout << "x = " << x << std::endl;
     std::cout << "y = " << y << std::endl;
     std::cout << "z = " << z << std::endl << std::endl;
-    addTwoNumbers( z, x, y );
+    addNums( z, x, y );
     std::cout << "x = " << x << std::endl;
     std::cout << "y = " << y << std::endl;
     std::cout << "z = " << z << std::endl << std::endl;

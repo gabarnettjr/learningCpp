@@ -1,4 +1,4 @@
-//mainScript.cpp
+//main.cpp
 #include <iostream>
 #include <string>
 #include <fstream>
