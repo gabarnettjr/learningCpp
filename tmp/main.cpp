@@ -1,5 +1,6 @@
 #include <iostream>
 //inserting this comment to test in git.
+//inserting one more comment for one more test.
 
 void addNums( const double&, const double&, double& );
 
