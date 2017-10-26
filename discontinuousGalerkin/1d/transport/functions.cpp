@@ -1,3 +1,4 @@
+#include <cmath>
 //#include <iostream>
 
 void getCardinalDerivatives4( const int& ne, const int& np, double x[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[] ) {
@@ -36,29 +37,30 @@ void getCardinalDerivatives4( const int& ne, const int& np, double x[], double d
     }
 }
 
-void odeFun( const int& ne, const int& np, const int& N, const double& u, double t, double w[], double rho[], double rhoPrime[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[] )
+void odeFun( int i, int j, const int& ne, const int& np, const int& N, const double& u, double t, double w[], double rho[], double rhoPrime[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[] )
 {
-    for( int i=0; i<ne; i++ ) {
+    for( i=0; i<ne; i++ ) {
         if( i == 0 ) {
-            rhoPrime[np*i] = ( u*rho[N-1] + u*rho[np*i] ) / 2. - u*( rho[np*i] - rho[N-1] );
+            rhoPrime[np*i] = u*( rho[N-1] + rho[np*i] )/2. - std::abs(u) * ( rho[np*i] - rho[N-1] );
         }
         else {
-            rhoPrime[np*i] = ( u*rho[np*i-1] + u*rho[np*i] ) / 2. - u*( rho[np*i] - rho[np*i-1] );
+            rhoPrime[np*i] = u*( rho[np*i-1] + rho[np*i] )/2. - std::abs(u) * ( rho[np*i] - rho[np*i-1] );
         }
         rhoPrime[np*i+1] = 0;
         rhoPrime[np*i+2] = 0;
         if( i == ne-1 ) {
-            rhoPrime[np*i+3] = -( ( u*rho[np*i+3] + u*rho[0] ) / 2. - u*( rho[0] - rho[np*i+3] ) );
+            rhoPrime[np*i+3] = -( u*( rho[np*i+3] + rho[0] )/2. - std::abs(u) * ( rho[0] - rho[np*i+3] ) );
         }
         else {
-            rhoPrime[np*i+3] = -( ( u*rho[np*i+3] + u*rho[np*i+4] ) / 2. - u*( rho[np*i+4] - rho[np*i+3] ) );
+            rhoPrime[np*i+3] = -( u*( rho[np*i+3] + rho[np*i+4] )/2. - std::abs(u) * ( rho[np*i+4] - rho[np*i+3] ) );
         }
         if( np == 4 ) {
-            for( int j=0; j<np; j++ ) {
-                rhoPrime[np*i]   = rhoPrime[np*i]   + w[np*i+j]*u*rho[np*i+j]*dphi0dx[np*i+j];
-                rhoPrime[np*i+1] = rhoPrime[np*i+1] + w[np*i+j]*u*rho[np*i+j]*dphi1dx[np*i+j];
-                rhoPrime[np*i+2] = rhoPrime[np*i+2] + w[np*i+j]*u*rho[np*i+j]*dphi2dx[np*i+j];
-                rhoPrime[np*i+3] = rhoPrime[np*i+3] + w[np*i+j]*u*rho[np*i+j]*dphi3dx[np*i+j];
+            for( j=0; j<np; j++ ) {
+                t = w[np*i+j] * (rho[np*i+j]*u);
+                rhoPrime[np*i]   = rhoPrime[np*i]   + t * dphi0dx[np*i+j];
+                rhoPrime[np*i+1] = rhoPrime[np*i+1] + t * dphi1dx[np*i+j];
+                rhoPrime[np*i+2] = rhoPrime[np*i+2] + t * dphi2dx[np*i+j];
+                rhoPrime[np*i+3] = rhoPrime[np*i+3] + t * dphi3dx[np*i+j];
             }
             rhoPrime[np*i]   = rhoPrime[np*i]   / w[np*i];
             rhoPrime[np*i+1] = rhoPrime[np*i+1] / w[np*i+1];
@@ -68,21 +70,21 @@ void odeFun( const int& ne, const int& np, const int& N, const double& u, double
     }
 }
 
-void rk( const int& ne, const int& np, const int& N, const double& u, double t, double w[], double rho[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[], const double& dt, double s1[], double s2[], double s3[], double s4[], double tmp[] ) {
-    odeFun( ne, np, N, u, t,       w, rho, s1, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
-    for( int i=0; i<N; i++ ) {
+void rk( int i, int j, const int& ne, const int& np, const int& N, const double& u, double t, double w[], double rho[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[], const double& dt, double s1[], double s2[], double s3[], double s4[], double tmp[] ) {
+    odeFun( i, j, ne, np, N, u, t,       w, rho, s1, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
+    for( i=0; i<N; i++ ) {
         tmp[i] = rho[i] + dt/2.*s1[i];
     }
-    odeFun( ne, np, N, u, t+dt/2., w, tmp, s2, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
-    for( int i=0; i<N; i++ ) {
+    odeFun( i, j, ne, np, N, u, t+dt/2., w, tmp, s2, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
+    for( i=0; i<N; i++ ) {
         tmp[i] = rho[i] + dt/2.*s2[i];
     }
-    odeFun( ne, np, N, u, t+dt/2., w, tmp, s3, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
-    for( int i=0; i<N; i++ ) {
+    odeFun( i, j, ne, np, N, u, t+dt/2., w, tmp, s3, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
+    for( i=0; i<N; i++ ) {
         tmp[i] = rho[i] + dt*s3[i];
     }
-    odeFun( ne, np, N, u, t+dt,    w, tmp, s4, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
-    for( int i=0; i<N; i++ ) {
+    odeFun( i, j, ne, np, N, u, t+dt,    w, tmp, s4, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
+    for( i=0; i<N; i++ ) {
         rho[i] = rho[i] + dt/6. * ( s1[i] + 2*s2[i] + 2*s3[i] + s4[i] );
     }
 }

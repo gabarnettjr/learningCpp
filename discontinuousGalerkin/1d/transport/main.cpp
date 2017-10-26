@@ -15,9 +15,9 @@ double rhoIC( double& x ) {
 
 void getCardinalDerivatives4( const int&, const int&, double[], double[], double[], double[], double[] );
 
-void odeFun( const int&, const int&, const int&, const double&, double, double[], double[], double[], double[], double[], double[], double[] );
+void odeFun( int, int, const int&, const int&, const int&, const double&, double, double[], double[], double[], double[], double[], double[], double[] );
 
-void rk( const int&, const int&, const int&, const double&, double,double[], double[], double[], double[], double[], double[], const double&, double[], double[], double[], double[], double[] );
+void rk( int, int, const int&, const int&, const int&, const double&, double,double[], double[], double[], double[], double[], double[], const double&, double[], double[], double[], double[], double[] );
 
 int main()
 {
@@ -26,10 +26,10 @@ int main()
     const double a = -1.;                         //left endpoint
     const double b = 1.;                          //right endpoint
     const int np = 4;                             //number of polynomials per element
-    const int ne = 4;                            //number of elements
+    const int ne = 16;                            //number of elements
     double t = 0.;
-    const double dt = 1./50.;
-    const int nTimesteps = 100;
+    const double dt = 1./100.;
+    const int nTimesteps = 200;
     
     int i, j, k;
 
@@ -182,7 +182,7 @@ int main()
     double s4[N];
     double tmp[N];
     for( k=0; k<nTimesteps; k++ ) {
-        rk( ne, np, N, u, t, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4, tmp );
+        rk( i, j, ne, np, N, u, t, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4, tmp );
         t = t + dt;
         std::stringstream s;
         s << "./snapshots/" << std::setfill('0') << std::setw(5) << k+1 << ".txt";
