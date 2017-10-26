@@ -9,11 +9,17 @@
 
 //The initial condition for rho, which should be periodic:
 double rhoIC( double& x ) {
-    return exp( -10 * pow(x,2) );
+    // return exp( -10 * pow(x,2) );
     // return cos( M_PI * x );
+    if( ( x > -1./2. ) && ( x < 1./2. ) ) {
+        return 1./2.;
+    }
+    else {
+        return 0.;
+    }
 }
 
-void getCardinalDerivatives4( const int&, const int&, double[], double[], double[], double[], double[] );
+void getCardinalDerivatives( const int&, const int&, double[], double[], double[], double[], double[] );
 
 void odeFun( int, int, const int&, const int&, const int&, const double&, double, double[], double[], double[], double[], double[], double[], double[] );
 
@@ -48,7 +54,7 @@ int main()
     }
 
     //Total number of nodes (element boundary nodes are repeated):
-    int N = np*ne;
+    const int N = np*ne;
 
     //GLL nodes and weights on standard interval from -1 to 1:
     double xGLL[np];
@@ -97,42 +103,41 @@ int main()
         }
     }
     
-    ////Print x and rho to make sure they are correct:
-    //std::cout << std::endl;
-    //for( i=0; i<N; i++ ) {
-    //    std::cout << "x[" << i << "] = " << x[i] << std::endl;
-    //}
-    //std::cout << std::endl;
-    //for( i=0; i<N; i++ ) {
-    //    std::cout << "rho[" << i << "] = " << rho[i] << std::endl;
-    //}
-    //std::cout << std::endl;
-    //for( i=0; i<N; i++ ) {
-    //    std::cout << "w[" << i << "] = " << w[i] << std::endl;
-    //}
+    // //Print x and rho to make sure they are correct:
+    // std::cout << std::endl;
+    // for( i=0; i<N; i++ ) {
+       // std::cout << "x[" << i << "] = " << x[i] << std::endl;
+    // }
+    // std::cout << std::endl;
+    // for( i=0; i<N; i++ ) {
+       // std::cout << "rho[" << i << "] = " << rho[i] << std::endl;
+    // }
+    // std::cout << std::endl;
+    // for( i=0; i<N; i++ ) {
+       // std::cout << "w[" << i << "] = " << w[i] << std::endl;
+    // }
     
-    ////Check if integration is working:
-    //std::cout << std::endl;
-    //double I = 0;
-    //for( i=0; i<N; i++ ) {
-    //	I = I + w[i]*rho[i];
-    //}
-    //std::cout << "I = " << I << std::endl;
+    // //Check if integration is working:
+    // std::cout << std::endl;
+    // double I = 0;
+    // for( i=0; i<N; i++ ) {
+    	// I = I + w[i]*rho[i];
+    // }
+    // std::cout << "I = " << I << std::endl;
 
     //Create the cardinal derivatives:
     double dphi0dx[N];
     double dphi1dx[N];
     double dphi2dx[N];
     double dphi3dx[N];
-    if( np == 4 ) {
-        getCardinalDerivatives4( ne, np, x, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
-    }
+    getCardinalDerivatives( ne, np, x, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
     
     //Open filestream for saving things:
     std::ofstream outFile;
     outFile.open( "u.txt" );
 
-    int pr = 16;
+    //Precision for printing to text files:
+    const int pr = 16;
 
     //Save the constant velocity u:
     outFile << std::scientific << std::setprecision(pr) << u;
