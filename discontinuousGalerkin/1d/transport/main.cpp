@@ -15,9 +15,9 @@ double rhoIC( double& x ) {
 
 void getCardinalDerivatives4( const int&, const int&, double[], double[], double[], double[], double[] );
 
-void odeFun( const int&, const int&, const double&, double, double[], double[], double[], double[], double[], double[], double[] );
+void odeFun( const int&, const int&, const int&, const double&, double, double[], double[], double[], double[], double[], double[], double[] );
 
-void rk( const int&, const int&, const double&, double, double[], double[], double[], double[], double[], double[], const double&, double[], double[], double[], double[] );
+void rk( const int&, const int&, const int&, const double&, double,double[], double[], double[], double[], double[], double[], const double&, double[], double[], double[], double[], double[] );
 
 int main()
 {
@@ -180,8 +180,9 @@ int main()
     double s2[N];
     double s3[N];
     double s4[N];
+    double tmp[N];
     for( k=0; k<nTimesteps; k++ ) {
-        rk( ne, np, u, t, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4 );
+        rk( ne, np, N, u, t, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4, tmp );
         t = t + dt;
         std::stringstream s;
         s << "./snapshots/" << std::setfill('0') << std::setw(5) << k+1 << ".txt";
@@ -192,7 +193,4 @@ int main()
         outFile << rho[N-1];
         outFile.close();
     }
-
-    ////messing around to figure out how to print things with consistent format:
-    //std::cout << std::scientific << std::setprecision(16) << .0000000123456789012345678 << std::endl;
 }
