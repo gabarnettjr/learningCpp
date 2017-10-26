@@ -6,5 +6,5 @@ using namespace std;
 int main ()
 {
   cout << "Hello, World.\n";
-  cout << "I'm a C++ program, but barely!";
+  cout << "I'm a C++ program, but barely.";
 }
