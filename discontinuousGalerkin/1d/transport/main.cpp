@@ -9,14 +9,14 @@
 
 //The initial condition for rho, which should be periodic:
 double rhoIC( double& x ) {
-    // return exp( -10 * pow(x,2) );
-    // return cos( M_PI * x );
-    if( ( x > -1./2. ) && ( x < 1./2. ) ) {
-        return 1./2.;
-    }
-    else {
-        return 0.;
-    }
+    //return exp( -10 * pow(x,2) );
+    return cos( M_PI * x );
+    //if( ( x > -1./2. ) && ( x < 1./2. ) ) {
+    //    return 1./2.;
+    //}
+    //else {
+    //    return 0.;
+    //}
 }
 
 void getCardinalDerivatives( const int&, const int&, double[], double[], double[], double[], double[] );
@@ -34,8 +34,8 @@ int main()
     const int np = 4;                             //number of polynomials per element
     const int ne = 16;                            //number of elements
     double t = 0.;
-    const double dt = 1./100.;
-    const int nTimesteps = 200;
+    const double dt = 1./70.;
+    const int nTimesteps = 140;
     
     int i, j, k;
 
@@ -53,45 +53,31 @@ int main()
         dx[i] = xb[i+1] - xb[i];
     }
 
-    //Total number of nodes (element boundary nodes are repeated):
-    const int N = np*ne;
-
     //GLL nodes and weights on standard interval from -1 to 1:
     double xGLL[np];
     double wGLL[np];
     if( np == 2 ) {
-        xGLL[0] = -1.;
-        xGLL[1] = 1.;
-        wGLL[0] = 1.;
-        wGLL[1] = 1.;
+        xGLL[0] = -1.;  xGLL[1] = 1.;
+        wGLL[0] = 1.;  wGLL[1] = 1.;
     }
     else if( np == 3 ) {
-        xGLL[0] = -1.;
-        xGLL[1] = 0.;
-        xGLL[2] = 1.;
-        wGLL[0] = 1./3.;
-        wGLL[1] = 4./3.;
-        wGLL[2] = 1./3.;
+        xGLL[0] = -1.;  xGLL[1] = 0.;  xGLL[2] = 1.;
+        wGLL[0] = 1./3.;  wGLL[1] = 4./3.;  wGLL[2] = 1./3.;
     }
 	else if( np == 4 ) {
-        xGLL[0] = -1.;
-        xGLL[1] = -sqrt(5.)/5.;
-        xGLL[2] = sqrt(5.)/5;
-        xGLL[3] = 1.;
-        wGLL[0] = 1./6.;
-        wGLL[1] = 5./6.;
-        wGLL[2] = 5./6.;
-        wGLL[3] = 1./6.;
+        xGLL[0] = -1.;  xGLL[1] = -sqrt(5.)/5.;  xGLL[2] = sqrt(5.)/5;  xGLL[3] = 1.;
+        wGLL[0] = 1./6.;  wGLL[1] = 5./6.;  wGLL[2] = 5./6.;  wGLL[3] = 1./6.;
     }
 
-    //Center of mass of each element:
+    //Center of mass for each element:
     double xc[ne];
     for( i=0; i<ne; i++ ) {
         xc[i] = ( xb[i] + xb[i+1] ) / 2.;
     }
 
     //All of the x-coordinates and quad weights in one long array.
-    //Also all of initial values of rho:
+    //Also all of initial values for rho:
+    const int N = np*ne;
     double x[N];
     double w[N];
     double rho[N];
@@ -134,12 +120,12 @@ int main()
     
     //Open filestream for saving things:
     std::ofstream outFile;
-    outFile.open( "u.txt" );
 
     //Precision for printing to text files:
     const int pr = 16;
 
     //Save the constant velocity u:
+    outFile.open( "u.txt" );
     outFile << std::scientific << std::setprecision(pr) << u;
     outFile.close();
 
@@ -172,12 +158,6 @@ int main()
         outFile << rho[i] << " ";
     }
     outFile << rho[N-1];
-    outFile.close();
-
-    std::stringstream s;
-    s << "./snapshots/" <<  std::setfill('0') << std::setw(5) << 5 << ".txt";
-    outFile.open( s.str() );
-    outFile << rho[2];
     outFile.close();
     
     //Time stepping:
