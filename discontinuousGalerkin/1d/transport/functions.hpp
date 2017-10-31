@@ -1,3 +1,6 @@
+#ifndef FUNCTIONS_HPP
+#define FUNCTIONS_HPP
+
 #include <iostream>
 #include <cmath>
 
@@ -124,3 +127,5 @@ void rk( int i, int j, const int& ne, const int& np, const int& N, const double&
         rho[i] = rho[i] + dt/6. * ( s1[i] + 2*s2[i] + 2*s3[i] + s4[i] );
     }
 }
+
+#endif

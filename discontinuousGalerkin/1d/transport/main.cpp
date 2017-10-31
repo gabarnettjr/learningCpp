@@ -4,8 +4,9 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include "functions.hpp"
 
-//This is a program to solve the 1d periodic transport equation.
+//Numerical solution for the 1d periodic transport equation.
 
 //The initial condition for rho, which should be periodic:
 double rhoIC( double& x ) {
@@ -18,12 +19,6 @@ double rhoIC( double& x ) {
     //    return 0.;
     //}
 }
-
-int getCardinalDerivatives( const int&, const int&, double[], double[], double[], double[], double[] );
-
-void odeFun( int, int, const int&, const int&, const int&, const double&, double, double[], double[], double[], double[], double[], double[], double[] );
-
-void rk( int, int, const int&, const int&, const int&, const double&, double,double[], double[], double[], double[], double[], double[], const double&, double[], double[], double[], double[], double[] );
 
 int main()
 {
@@ -38,7 +33,7 @@ int main()
     const int nTimesteps = 480;                   //number of timesteps
     
     int i, j, k;
-
+    
     //Equally spaced element boundary points.  Alternatively,
     //these could come from some other place and they may
     //not be equally spaced.
@@ -46,13 +41,13 @@ int main()
     for( i=0; i<ne+1; i++ ) {
         xb[i] = a + i*(b-a)/ne;
     }
-
+    
     //The array of element widths (all the same on an equispaced grid):
     double dx[ne];
     for( i=0; i<ne; i++ ) {
         dx[i] = xb[i+1] - xb[i];
     }
-
+    
     //GLL nodes and weights on standard interval from -1 to 1:
     double xGLL[np];
     double wGLL[np];
@@ -68,13 +63,13 @@ int main()
         xGLL[0] = -1.;  xGLL[1] = -sqrt(5.)/5.;  xGLL[2] = sqrt(5.)/5;  xGLL[3] = 1.;
         wGLL[0] = 1./6.;  wGLL[1] = 5./6.;  wGLL[2] = 5./6.;  wGLL[3] = 1./6.;
     }
-
+    
     //Center of mass for each element:
     double xc[ne];
     for( i=0; i<ne; i++ ) {
         xc[i] = ( xb[i] + xb[i+1] ) / 2.;
     }
-
+    
     //All of the x-coordinates and quad weights in one long array.
     //Also all of the initial values for rho:
     const int N = np*ne;
@@ -110,7 +105,7 @@ int main()
     	// I = I + w[i]*rho[i];
     // }
     // std::cout << "I = " << I << std::endl;
-
+    
     //Create the cardinal derivatives:
     double dphi0dx[N];
     double dphi1dx[N];
@@ -120,30 +115,30 @@ int main()
     
     //Open filestream for saving things:
     std::ofstream outFile;
-
+    
     //Precision for printing to text files:
     const int pr = 16;
-
+    
     //Save the constant velocity u:
     outFile.open( "u.txt" );
     outFile << std::scientific << std::setprecision(pr) << u;
     outFile.close();
-
+    
     //Save start time:
     outFile.open( "t.txt" );
     outFile << t;
     outFile.close();
-
+    
     //Save time increment:
     outFile.open( "dt.txt" );
     outFile << dt;
     outFile.close();
-
+    
     //Save number of time-steps:
     outFile.open( "nTimesteps.txt" );
     outFile << nTimesteps;
     outFile.close();
-
+    
     //save vector of all x-coordinates:
     outFile.open( "x.txt" );
     for( i=0; i<N-1; i++ ) {
@@ -151,7 +146,7 @@ int main()
     }
     outFile << x[N-1];
     outFile.close();
-
+    
     //save vector of rho values at initial time:
     outFile.open( "./snapshots/000000.txt" );
     for( i=0; i<N-1; i++ ) {
