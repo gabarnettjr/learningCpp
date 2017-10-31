@@ -2,6 +2,11 @@
 #include "metal.hpp"
 #include "point.hpp"
 
+metal changeName( metal a ) {
+    a.name = "hahaha";
+    return a;
+}
+
 int main()
 {
     metal a;
@@ -10,6 +15,9 @@ int main()
     a.meltPt = 1890;
     a.tensileMod = 289;
     a.daysDeliv = 19;
+
+    a.printInfo();
+    a = changeName( a );
     a.printInfo();
 
     const Point p( 1.6, -3.23 );
