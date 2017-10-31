@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cmath>
 
-void getCardinalDerivatives( const int& ne, const int& np, double x[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[] ) {
+int getCardinalDerivatives( const int& ne, const int& np, double x[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[] ) {
     double x0;
     double x1;
     double x2;
@@ -61,9 +61,12 @@ void getCardinalDerivatives( const int& ne, const int& np, double x[], double dp
             dphi3dx[np*i+3] = ( (x3-x0)*(x3-x1) + (x3-x0)*(x3-x2) + (x3-x1)*(x3-x2) ) / ( (x3-x0)*(x3-x1)*(x3-x2) );
         }
         else {
-            std::cerr << "Error:  np should be 2, 3, or 4." << std::endl;
+            std::cerr << "Error:  np should be 2, 3, or 4.";
+            return EXIT_FAILURE;
+            // throw std::logic_error( "np should be 2, 3, or 4." );
         }
     }
+    return 0;
 }
 
 void odeFun( int i, int j, const int& ne, const int& np, const int& N, const double& u, double t, double w[], double rho[], double rhoPrime[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[] )
@@ -90,7 +93,7 @@ void odeFun( int i, int j, const int& ne, const int& np, const int& N, const dou
             rhoPrime[np*i+(np-1)] = -( u*( rho[np*i+(np-1)] + rho[np*i+np] )/2. - std::abs(u) * ( rho[np*i+np] - rho[np*i+(np-1)] ) );
         }
         for( j=0; j<np; j++ ) {
-            t = w[np*i+j] * (rho[np*i+j]*u);            //temporary value (time is not explicitly needed)
+            t = w[np*i+j] * (rho[np*i+j]*u);            //temporary value (time t is not explicitly needed)
             rhoPrime[np*i]   = rhoPrime[np*i]   + t * dphi0dx[np*i+j];
             rhoPrime[np*i+1] = rhoPrime[np*i+1] + t * dphi1dx[np*i+j];
             if( np > 2 ) { rhoPrime[np*i+2] = rhoPrime[np*i+2] + t * dphi2dx[np*i+j]; }
@@ -103,7 +106,7 @@ void odeFun( int i, int j, const int& ne, const int& np, const int& N, const dou
 }
 
 void rk( int i, int j, const int& ne, const int& np, const int& N, const double& u, double t, double w[], double rho[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[], const double& dt, double s1[], double s2[], double s3[], double s4[], double tmp[] ) {
-    //The output is the 1D array rho.  Currently only does rk4.
+    //The output is the 1D array rho.  Currently only does RK4.
     odeFun( i, j, ne, np, N, u, t,       w, rho, s1, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
     for( i=0; i<N; i++ ) {
         tmp[i] = rho[i] + dt/2.*s1[i];

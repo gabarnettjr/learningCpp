@@ -9,11 +9,11 @@ x = np.loadtxt("x.txt")
 a = min(x)
 b = max(x)
 nTimesteps = int( np.loadtxt("nTimesteps.txt") )
-delt = 7
+delt = 24
 
 plt.ion()
 for i in np.arange(0,nTimesteps+1,delt) :
-    rho = np.loadtxt('./snapshots/'+str(i).zfill(5)+'.txt')
+    rho = np.loadtxt('./snapshots/'+str(i).zfill(6)+'.txt')
     plt.plot( x, rho )
     plt.axis( [a,b,-1.2,1.2] )
     plt.title( '{0:02.3f}'.format(t) )

@@ -9,7 +9,7 @@
 
 //The initial condition for rho, which should be periodic:
 double rhoIC( double& x ) {
-    //return exp( -10 * pow(x,2) );
+    // return exp( -10 * pow(x,2) );
     return cos( M_PI * x );
     //if( ( x > -1./2. ) && ( x < 1./2. ) ) {
     //    return 1./2.;
@@ -19,7 +19,7 @@ double rhoIC( double& x ) {
     //}
 }
 
-void getCardinalDerivatives( const int&, const int&, double[], double[], double[], double[], double[] );
+int getCardinalDerivatives( const int&, const int&, double[], double[], double[], double[], double[] );
 
 void odeFun( int, int, const int&, const int&, const int&, const double&, double, double[], double[], double[], double[], double[], double[], double[] );
 
@@ -31,11 +31,11 @@ int main()
     const double u = 1.;                          //velocity
     const double a = -1.;                         //left endpoint
     const double b = 1.;                          //right endpoint
-    const int np = 4;                             //number of polynomials per element
-    const int ne = 16;                            //number of elements
-    double t = 0.;
-    const double dt = 1./70.;
-    const int nTimesteps = 140;
+    const int np = 2;                             //number of polynomials per element
+    const int ne = 80;                            //number of elements
+    double t = 0.;                                //start time
+    const double dt = 1./240.;                     //time increment
+    const int nTimesteps = 480;                   //number of timesteps
     
     int i, j, k;
 
@@ -76,7 +76,7 @@ int main()
     }
 
     //All of the x-coordinates and quad weights in one long array.
-    //Also all of initial values for rho:
+    //Also all of the initial values for rho:
     const int N = np*ne;
     double x[N];
     double w[N];
@@ -116,7 +116,7 @@ int main()
     double dphi1dx[N];
     double dphi2dx[N];
     double dphi3dx[N];
-    getCardinalDerivatives( ne, np, x, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
+    i = getCardinalDerivatives( ne, np, x, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
     
     //Open filestream for saving things:
     std::ofstream outFile;
@@ -153,7 +153,7 @@ int main()
     outFile.close();
 
     //save vector of rho values at initial time:
-    outFile.open( "./snapshots/00000.txt" );
+    outFile.open( "./snapshots/000000.txt" );
     for( i=0; i<N-1; i++ ) {
         outFile << rho[i] << " ";
     }
@@ -170,7 +170,7 @@ int main()
         rk( i, j, ne, np, N, u, t, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4, tmp );
         t = t + dt;
         std::stringstream s;
-        s << "./snapshots/" << std::setfill('0') << std::setw(5) << k+1 << ".txt";
+        s << "./snapshots/" << std::setfill('0') << std::setw(6) << k+1 << ".txt";
         outFile.open( s.str() );
         for( i=0; i<N-1; i++ ) {
             outFile << rho[i] << " ";
