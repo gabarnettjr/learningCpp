@@ -9,7 +9,7 @@ x = np.loadtxt("x.txt")
 a = min(x)
 b = max(x)
 nTimesteps = int( np.loadtxt("nTimesteps.txt") )
-delt = 24
+delt = 20
 
 plt.ion()
 for i in np.arange(0,nTimesteps+1,delt) :

@@ -4,11 +4,50 @@
 #include <iostream>
 #include <cmath>
 
+void getElementBoundaries( const int& ne, const double& a, const double& b, double xb[] ) {
+    for( int i=0; i<ne+1; i++ ) {
+        xb[i] = a + i*(b-a)/ne;
+    }
+}
+
+void getElementWidthsAndCenters( const int& ne, double xb[], double dx[], double xc[] ) {
+    for( int i=0; i<ne; i++ ) {
+        dx[i] = xb[i+1] - xb[i];
+        xc[i] = ( xb[i] + xb[i+1] ) / 2.;
+    }
+}
+
+int getGLL( const int& np, double xGLL[], double wGLL[] ) {
+    if( np == 2 ) {
+        xGLL[0] = -1.;  xGLL[1] = 1.;
+        wGLL[0] = 1.;  wGLL[1] = 1.;
+    }
+    else if( np == 3 ) {
+        xGLL[0] = -1.;  xGLL[1] = 0.;  xGLL[2] = 1.;
+        wGLL[0] = 1./3.;  wGLL[1] = 4./3.;  wGLL[2] = 1./3.;
+    }
+	else if( np == 4 ) {
+        xGLL[0] = -1.;  xGLL[1] = -sqrt(5.)/5.;  xGLL[2] = sqrt(5.)/5;  xGLL[3] = 1.;
+        wGLL[0] = 1./6.;  wGLL[1] = 5./6.;  wGLL[2] = 5./6.;  wGLL[3] = 1./6.;
+    }
+    else {
+        std::cerr << "Error:  np should be 2, 3, or 4.";
+        return EXIT_FAILURE;
+    }
+    return 0;
+}
+
+void getCoordsAndQuadWeights( const int& ne, const int& np, double xc[], double dx[], double xGLL[], double wGLL[], double x[], double w[] ) {
+    for( int i=0; i<ne; i++ ) {
+        for( int j=0; j<np; j++ ) {
+            x[np*i+j] = xc[i] + dx[i]/2. * xGLL[j];
+            w[np*i+j] = dx[i]/2. * wGLL[j];
+        }
+    }
+}
+
 int getCardinalDerivatives( const int& ne, const int& np, double x[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[] ) {
-    double x0;
-    double x1;
-    double x2;
-    double x3;
+    double x0, x1, x2, x3;
     for( int i=0; i<ne; i++ ) {
         if( np == 2 ) {
             x0 = x[np*i];
@@ -66,7 +105,6 @@ int getCardinalDerivatives( const int& ne, const int& np, double x[], double dph
         else {
             std::cerr << "Error:  np should be 2, 3, or 4.";
             return EXIT_FAILURE;
-            // throw std::logic_error( "np should be 2, 3, or 4." );
         }
     }
     return 0;
@@ -77,10 +115,8 @@ void odeFun( int i, int j, const int& ne, const int& np, const int& N, const dou
 //This function computes RHS.  The output is the 1D array rhoPrime.
 {
     for( i=0; i<ne; i++ ) {
-        rhoPrime[np*i] = 0;
-        rhoPrime[np*i+1] = 0;
-        if( np > 2 ) { rhoPrime[np*i+2] = 0; }
-        if( np > 3 ) { rhoPrime[np*i+3] = 0; }
+        if( np > 2 ) { rhoPrime[np*i+1] = 0; }
+        if( np > 3 ) { rhoPrime[np*i+2] = 0; }
         //Left-most element:
         if( i == 0 ) { //left-most node of left-most element (periodic BC enforcement and LFF):
             rhoPrime[np*i] = u*( rho[N-1] + rho[np*i] )/2. - std::abs(u) * ( rho[np*i] - rho[N-1] );
