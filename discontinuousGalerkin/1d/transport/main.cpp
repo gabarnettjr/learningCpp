@@ -8,34 +8,16 @@
 
 //Numerical solution for the 1d periodic transport equation.
 
-//Instructions:
-//mkdir snapshots
-//g++ functions.hpp main.cpp
-//python plottingScript.py
-
-//Function describing the initial condition for rho, which should be periodic:
-double rhoIC( double& x ) {
-    // return exp( -10 * pow(x,2) );
-    return cos( M_PI * x );
-    //if( ( x > -1./2. ) && ( x < 1./2. ) ) {
-    //    return 1./2.;
-    //}
-    //else {
-    //    return 0.;
-    //}
-}
-
 int main()
 {
     //Parameters that the user chooses:
-    const double u = 1.;                          //constant velocity
     const double a = -1.;                         //left endpoint
     const double b = 1.;                          //right endpoint
     const int np = 3;                             //number of polynomials per element
     const int ne = 40;                            //number of elements
-    double t = 0.;                                //start time
     const double dt = 1./200.;                    //time increment
     const int nTimesteps = 400;                   //number of timesteps
+    double t = 0.;                                //start time
     
     int i, j, k;
     
@@ -68,11 +50,13 @@ int main()
     double dphi3dx[N];
     i = getCardinalDerivatives( ne, np, x, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
     
-    //initial condition for rho:
+    //initial rho and velocity u:
     double rho[N];
+    double u[N];
     for( i=0; i<ne; i++ ) {
         for( j=0; j<np; j++ ) {
             rho[np*i+j] = rhoIC( x[np*i+j] );
+            u[np*i+j] = uFunc( x[np*i+j], t );
         }
     }
     
@@ -82,14 +66,9 @@ int main()
     //Precision for printing to text files:
     const int pr = 16;
     
-    //Save the constant velocity u:
-    outFile.open( "u.txt" );
-    outFile << std::scientific << std::setprecision(pr) << u;
-    outFile.close();
-    
     //Save start time:
     outFile.open( "t.txt" );
-    outFile << t;
+    outFile << std::scientific << std::setprecision(pr) << t;
     outFile.close();
     
     //Save time increment:
@@ -108,6 +87,13 @@ int main()
         outFile << x[i] << " ";
     }
     outFile.close();
+
+    ////Save the velocity u:
+    //outFile.open( "u.txt" );
+    //for( i=0; i<N; i++ ) {
+    //    outFile << u[i] << " ";
+    //}
+    //outFile.close();
     
     //save vector of rho values at initial time:
     outFile.open( "./snapshots/000000.txt" );
@@ -122,9 +108,11 @@ int main()
     double s3[N];
     double s4[N];
     double tmp[N];
+    double alphaMax;
+    double tmpD;
     for( k=0; k<nTimesteps; k++ ) {
-        rk4( i, j, ne, np, N, u, t, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4, tmp );
-        t = t + dt;
+        rk3( i, j, ne, np, N, u, x, t, alphaMax, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx,
+        dt, s1, s2, s3, s4, tmp, tmpD );
         std::stringstream s;
         s << "./snapshots/" << std::setfill('0') << std::setw(6) << k+1 << ".txt";
         outFile.open( s.str() );

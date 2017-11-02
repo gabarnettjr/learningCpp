@@ -13,6 +13,17 @@ T addNumbers( const T& x, const T& y ) {
     return x + y;
 }
 
+void addArrays( int& n, double x[], double y[], double z[] ) {
+    n = n + 1;
+    n = n - 1;
+    n = addInts( n-1, n );
+    n = ( n + 1 ) / 2;
+    for( int i=0; i<n; i++ ) {
+        z[i] = x[i] + y[i];
+        std::cout << "z[" << i << "] = " << z[i] << std::endl;
+    }
+}
+
 int main()
 {
     const int x = 1;
@@ -23,6 +34,12 @@ int main()
     double b;
     int c;
     double d;
+
+    int n = 5;
+    double X[n] = {1,2,3,4,5};
+    double Y[n] = {5,4,3,2,1};
+    double Z[n];
+    addArrays( n, X, Y, Z );
 
     a = addInts( x, y );
     b = addDoubles( z, w );
