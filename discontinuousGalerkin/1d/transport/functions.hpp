@@ -145,7 +145,7 @@ void odeFun( int i, int j, const int& ne, const int& np, const int& N, const dou
 }
 
 void rk3( int i, int j, const int& ne, const int& np, const int& N, const double& u, double t, double w[], double rho[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[], const double& dt, double s1[], double s2[], double s3[], double s4[], double tmp[] ) {
-    //The output is the 1D array rho.  Currently only does RK4.
+    //3-stage, 3rd order RK.  The output is the 1D array rho.
     odeFun( i, j, ne, np, N, u, t,       w, rho, s1, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
     for( i=0; i<N; i++ ) {
         tmp[i] = rho[i] + dt/3.*s1[i];
@@ -161,7 +161,7 @@ void rk3( int i, int j, const int& ne, const int& np, const int& N, const double
 }
 
 void rk4( int i, int j, const int& ne, const int& np, const int& N, const double& u, double t, double w[], double rho[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[], const double& dt, double s1[], double s2[], double s3[], double s4[], double tmp[] ) {
-    //The output is the 1D array rho.  Currently only does RK4.
+    //4-stage, 4th order RK.  The output is the 1D array rho.
     odeFun( i, j, ne, np, N, u, t,       w, rho, s1, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
     for( i=0; i<N; i++ ) {
         tmp[i] = rho[i] + dt/2.*s1[i];
