@@ -31,7 +31,7 @@ int main()
     const double u = 1.;                          //constant velocity
     const double a = -1.;                         //left endpoint
     const double b = 1.;                          //right endpoint
-    const int np = 4;                             //number of polynomials per element
+    const int np = 3;                             //number of polynomials per element
     const int ne = 40;                            //number of elements
     double t = 0.;                                //start time
     const double dt = 1./200.;                    //time increment
@@ -123,7 +123,7 @@ int main()
     double s4[N];
     double tmp[N];
     for( k=0; k<nTimesteps; k++ ) {
-        rk( i, j, ne, np, N, u, t, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4, tmp );
+        rk4( i, j, ne, np, N, u, t, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4, tmp );
         t = t + dt;
         std::stringstream s;
         s << "./snapshots/" << std::setfill('0') << std::setw(6) << k+1 << ".txt";

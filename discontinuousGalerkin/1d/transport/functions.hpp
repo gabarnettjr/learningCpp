@@ -144,7 +144,23 @@ void odeFun( int i, int j, const int& ne, const int& np, const int& N, const dou
     }
 }
 
-void rk( int i, int j, const int& ne, const int& np, const int& N, const double& u, double t, double w[], double rho[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[], const double& dt, double s1[], double s2[], double s3[], double s4[], double tmp[] ) {
+void rk3( int i, int j, const int& ne, const int& np, const int& N, const double& u, double t, double w[], double rho[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[], const double& dt, double s1[], double s2[], double s3[], double s4[], double tmp[] ) {
+    //The output is the 1D array rho.  Currently only does RK4.
+    odeFun( i, j, ne, np, N, u, t,       w, rho, s1, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
+    for( i=0; i<N; i++ ) {
+        tmp[i] = rho[i] + dt/3.*s1[i];
+    }
+    odeFun( i, j, ne, np, N, u, t+dt/3., w, tmp, s2, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
+    for( i=0; i<N; i++ ) {
+        tmp[i] = rho[i] + 2*dt/3.*s2[i];
+    }
+    odeFun( i, j, ne, np, N, u, t+2*dt/3,    w, tmp, s2, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
+    for( i=0; i<N; i++ ) {
+        rho[i] = rho[i] + dt/4. * ( s1[i] + 3*s2[i] );
+    }
+}
+
+void rk4( int i, int j, const int& ne, const int& np, const int& N, const double& u, double t, double w[], double rho[], double dphi0dx[], double dphi1dx[], double dphi2dx[], double dphi3dx[], const double& dt, double s1[], double s2[], double s3[], double s4[], double tmp[] ) {
     //The output is the 1D array rho.  Currently only does RK4.
     odeFun( i, j, ne, np, N, u, t,       w, rho, s1, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
     for( i=0; i<N; i++ ) {
