@@ -1,6 +1,7 @@
 #ifndef DGMESH_HPP
 #define DGMESH_HPP
 
+#include <iostream>
 #include <cmath>
 
 class DGmesh {
@@ -40,7 +41,13 @@ DGmesh::DGmesh( double A, double B, int NP, int NE ) {
     
     a = A;
     b = B;
-    np = NP;
+    if( NP == 2 || NP == 3 || NP == 4 ) {
+        np = NP;
+    }
+    else {
+        std::cerr << "Error: np should be 2, 3, or 4.";
+        std::exit( EXIT_FAILURE );
+    }
     ne = NE;
     
     N = np*ne;

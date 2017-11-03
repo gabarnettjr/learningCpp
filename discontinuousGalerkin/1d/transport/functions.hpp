@@ -16,7 +16,7 @@ double rhoIC( const double& x ) {
     //}
 }
 
-//Function describing the given velocity u:
+//Function describing the prescribed velocity u:
 double uFunc( const double& x, const double& t ) {
     // if( t < 1. ) {
         // return 1.;

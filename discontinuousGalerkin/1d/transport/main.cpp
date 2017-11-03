@@ -13,7 +13,7 @@
 // (*) mkdir snapshots
 // (*) g++ DGmesh.hpp functions.hpp main.cpp
 // (*) ./a
-// (*) python plottingScript.py
+// (*) python plottingScript.py (push any key to advance to next frame)
 
 int main()
 {   
@@ -36,20 +36,17 @@ int main()
     //may come from some other place and might not be equally spaced:
     double xb[ne+1];
     M.getElementBoundaries( xb );
-    // getElementBoundaries( ne, a, b, xb );
     
     //The array of element widths (all the same on an equispaced grid),
     //and also the center of mass for each element:
     double dx[ne];
     double xc[ne];
     M.getElementWidthsAndCenters( dx, xc );
-    // getElementWidthsAndCenters( ne, xb, dx, xc );
     
     //GLL nodes and weights on standard interval [-1,1]:
     double xGLL[np];
     double wGLL[np];
     M.getGLL( xGLL, wGLL );
-    // i = getGLL( np, xGLL, wGLL );
     
     const int N = M.getN();
     
@@ -57,7 +54,6 @@ int main()
     double x[N];
     double w[N];
     M.getCoordsAndQuadWeights( x, w );
-    // getCoordsAndQuadWeights( ne, np, xc, dx, xGLL, wGLL, x, w );
     
     //Create the cardinal derivatives:
     double dphi0dx[N];
@@ -65,7 +61,6 @@ int main()
     double dphi2dx[N];
     double dphi3dx[N];
     M.getCardinalDerivatives( dphi0dx, dphi1dx, dphi2dx, dphi3dx );
-    // i = getCardinalDerivatives( ne, np, x, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
     
     //initial rho and velocity u:
     double rho[N];
@@ -135,7 +130,7 @@ int main()
         }
         else {
             std::cerr << "Error:  rkStages should be 2, 3, or 4.";
-            return EXIT_FAILURE;
+            std::exit( EXIT_FAILURE );
         }
         std::stringstream s;
         s << "./snapshots/" << std::setfill('0') << std::setw(6) << k+1 << ".txt";

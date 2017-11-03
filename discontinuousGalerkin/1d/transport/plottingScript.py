@@ -18,8 +18,6 @@ for i in np.arange(0,nTimesteps+1,delt) :
     plt.title( '{0:02.3f}'.format(t) )
     t = t + delt*dt
     plt.waitforbuttonpress()
-#    plt.draw()
-#    time.sleep(.01)
     plt.cla()
 
 plt.ioff()
