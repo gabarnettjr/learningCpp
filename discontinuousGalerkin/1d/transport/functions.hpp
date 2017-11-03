@@ -18,14 +18,14 @@ double rhoIC( double& x ) {
 
 //Function describing the given velocity u:
 double uFunc( double& x, double& t ) {
-    //if( t <= 1. ) {
-    //    return 1.;
-    //}
-    //else {
-    //    return -1.;
-    //}
-    //return sin( M_PI * t );
-    return 1.;
+    // if( t < 1. ) {
+        // return 1.;
+    // }
+    // else {
+        // return -1.;
+    // }
+    return sin( M_PI * t );
+    //return 1.;
     //return exp( -(t-1)*(t-1) );
 }
 
@@ -37,7 +37,7 @@ void getElementBoundaries( const int& ne, const double& a, const double& b, doub
     }
 }
 
-void getElementWidthsAndCenters( const int& ne, double xb[], double dx[], double xc[] ) {
+void getElementWidthsAndCenters( const int& ne, const double xb[], double dx[], double xc[] ) {
     for( int i=0; i<ne; i++ ) {
         dx[i] = xb[i+1] - xb[i];
         xc[i] = ( xb[i] + xb[i+1] ) / 2.;
@@ -64,8 +64,8 @@ int getGLL( const int& np, double xGLL[], double wGLL[] ) {
     return 0;
 }
 
-void getCoordsAndQuadWeights( const int& ne, const int& np, double xc[], double dx[],
-double xGLL[], double wGLL[], double x[], double w[] ) {
+void getCoordsAndQuadWeights( const int& ne, const int& np, const double xc[], const double dx[],
+const double xGLL[], const double wGLL[], double x[], double w[] ) {
     for( int i=0; i<ne; i++ ) {
         for( int j=0; j<np; j++ ) {
             x[np*i+j] = xc[i] + dx[i]/2. * xGLL[j];
@@ -74,7 +74,7 @@ double xGLL[], double wGLL[], double x[], double w[] ) {
     }
 }
 
-int getCardinalDerivatives( const int& ne, const int& np, double x[], double dphi0dx[],
+int getCardinalDerivatives( const int& ne, const int& np, const double x[], double dphi0dx[],
 double dphi1dx[], double dphi2dx[], double dphi3dx[] ) {
     double x0, x1, x2, x3;
     for( int i=0; i<ne; i++ ) {
@@ -143,17 +143,15 @@ double dphi1dx[], double dphi2dx[], double dphi3dx[] ) {
     return 0;
 }
 
-void odeFun( int& i, int& j, const int& ne, const int& np, const int& N, double u[], double x[], double& t,
-double& alphaMax, double w[], double rho[], double rhoPrime[], double dphi0dx[], double dphi1dx[],
-double dphi2dx[], double dphi3dx[], double& tmpD )
-//For each element, you have np ODEs:  (drho/dt)_i = RHS_i, for i = 0,...,np-1.
-//This function computes RHS.  The output is the 1D array rhoPrime.
-{
+void odeFun( int& i, int& j, const int& ne, const int& np, const int& N, double u[], double x[],
+double& t, double& alphaMax, const double w[], double rho[], double rhoPrime[], const double dphi0dx[],
+const double dphi1dx[], const double dphi2dx[], const double dphi3dx[], double& tmpD ) {
+    //For each element, you have np ODEs:  (drho/dt)_i = RHS_i, for i = 0,...,np-1.
+    //This function computes RHS.  The output is the 1D array rhoPrime.
     alphaMax = 0.;
     for( i=0; i<N; i++ ) {
-        if( std::abs(u[i]) > alphaMax ) {
-            alphaMax = std::abs(u[i]);
-        }
+        tmpD = std::abs( u[i] );
+        if( tmpD > alphaMax ) { alphaMax = tmpD; }
     }
     for( i=0; i<ne; i++ ) {
         if( np > 2 ) { rhoPrime[np*i+1] = 0; }
@@ -180,12 +178,8 @@ double dphi2dx[], double dphi3dx[], double& tmpD )
             tmpD = w[np*i+j]*(rho[np*i+j]*u[np*i+j]); 
             rhoPrime[np*i]   = rhoPrime[np*i]   + tmpD * dphi0dx[np*i+j];
             rhoPrime[np*i+1] = rhoPrime[np*i+1] + tmpD * dphi1dx[np*i+j];
-            if( np > 2 ) {
-                rhoPrime[np*i+2] = rhoPrime[np*i+2] + tmpD * dphi2dx[np*i+j];
-            }
-            if( np > 3 ) {
-                rhoPrime[np*i+3] = rhoPrime[np*i+3] + tmpD * dphi3dx[np*i+j];
-            }
+            if( np > 2 ) { rhoPrime[np*i+2] = rhoPrime[np*i+2] + tmpD * dphi2dx[np*i+j]; }
+            if( np > 3 ) { rhoPrime[np*i+3] = rhoPrime[np*i+3] + tmpD * dphi3dx[np*i+j]; }
         }
         for( j=0; j<np; j++ ) {
             rhoPrime[np*i+j] = rhoPrime[np*i+j] / w[np*i+j];
@@ -194,10 +188,10 @@ double dphi2dx[], double dphi3dx[], double& tmpD )
 }
 
 void rk3( int& i, int& j, const int& ne, const int& np, const int& N, double u[], double x[], double& t,
-double& alphaMax, double w[], double rho[], double dphi0dx[], double dphi1dx[], double dphi2dx[],
-double dphi3dx[], const double& dt,  double s1[], double s2[], double s3[], double s4[], double tmp[],
+double& alphaMax, const double w[], double rho[], const double dphi0dx[], const double dphi1dx[], const double dphi2dx[],
+const double dphi3dx[], const double& dt,  double s1[], double s2[], double s3[], double s4[], double tmp[],
 double& tmpD ) {
-    //3-stage, 3rd order RK.  The output is the 1D array rho.
+    //3-stage, 3rd order RK.  The outputs are t and the 1D array rho.
     //stage 1:
     odeFun( i, j, ne, np, N, u, x, t, alphaMax, w, rho, s1, dphi0dx, dphi1dx, dphi2dx, dphi3dx, tmpD );
     //stage 2:
@@ -222,10 +216,10 @@ double& tmpD ) {
 }
 
 void rk4( int& i, int& j, const int& ne, const int& np, const int& N, double u[], double x[], double& t,
-double& alphaMax, double w[], double rho[], double dphi0dx[], double dphi1dx[], double dphi2dx[],
-double dphi3dx[], const double& dt,  double s1[], double s2[], double s3[], double s4[], double tmp[],
+double& alphaMax, const double w[], double rho[], const double dphi0dx[], const double dphi1dx[], const double dphi2dx[],
+const double dphi3dx[], const double& dt,  double s1[], double s2[], double s3[], double s4[], double tmp[],
 double& tmpD ) {
-    //4-stage, 4th order RK.  The output is the 1D array rho.
+    //4-stage, 4th order RK.  The outputs are t and the 1D array rho.
     //stage 1:
     odeFun( i, j, ne, np, N, u, x, t, alphaMax, w, rho, s1, dphi0dx, dphi1dx, dphi2dx, dphi3dx, tmpD );
     //stage 2:

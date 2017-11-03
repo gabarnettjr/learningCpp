@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
-u = float( np.loadtxt("u.txt") )
 t = float( np.loadtxt("t.txt") )
 dt = float( np.loadtxt("dt.txt") )
 x = np.loadtxt("x.txt")

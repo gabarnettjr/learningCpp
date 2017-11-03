@@ -6,7 +6,7 @@
 #include <iomanip>
 #include "functions.hpp"
 
-//Numerical solution for the 1d periodic transport equation.
+//Numerical solution for the 1d periodic transport equation using discontinuous Galerkin.
 
 int main()
 {
@@ -16,7 +16,8 @@ int main()
     const int np = 3;                             //number of polynomials per element
     const int ne = 40;                            //number of elements
     const double dt = 1./200.;                    //time increment
-    const int nTimesteps = 400;                   //number of timesteps
+    const int nTimesteps = 800;                   //number of timesteps
+    const int rkStages = 4;                       //number of Runge-Kutta stages (3 or 4)
     double t = 0.;                                //start time
     
     int i, j, k;
@@ -87,13 +88,6 @@ int main()
         outFile << x[i] << " ";
     }
     outFile.close();
-
-    ////Save the velocity u:
-    //outFile.open( "u.txt" );
-    //for( i=0; i<N; i++ ) {
-    //    outFile << u[i] << " ";
-    //}
-    //outFile.close();
     
     //save vector of rho values at initial time:
     outFile.open( "./snapshots/000000.txt" );
@@ -111,8 +105,18 @@ int main()
     double alphaMax;
     double tmpD;
     for( k=0; k<nTimesteps; k++ ) {
-        rk3( i, j, ne, np, N, u, x, t, alphaMax, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx,
-        dt, s1, s2, s3, s4, tmp, tmpD );
+        if( rkStages == 3 ) {
+            rk3( i, j, ne, np, N, u, x, t, alphaMax, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx,
+            dt, s1, s2, s3, s4, tmp, tmpD );
+        }
+        else if( rkStages == 4 ) {
+            rk4( i, j, ne, np, N, u, x, t, alphaMax, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx,
+            dt, s1, s2, s3, s4, tmp, tmpD );
+        }
+        else {
+            std::cerr << "Error:  rkStages should be 3 or 4.";
+            return EXIT_FAILURE;
+        }
         std::stringstream s;
         s << "./snapshots/" << std::setfill('0') << std::setw(6) << k+1 << ".txt";
         outFile.open( s.str() );
