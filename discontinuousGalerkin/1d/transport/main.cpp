@@ -4,12 +4,19 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include "DGmesh.hpp"
 #include "functions.hpp"
 
 //Numerical solution for the 1d periodic transport equation using discontinuous Galerkin.
 
+//Instructions:
+// (*) mkdir snapshots
+// (*) g++ DGmesh.hpp functions.hpp main.cpp
+// (*) ./a
+// (*) python plottingScript.py
+
 int main()
-{
+{   
     //Parameters that the user chooses:
     const double a = -1.;                         //left endpoint
     const double b = 1.;                          //right endpoint
@@ -17,39 +24,48 @@ int main()
     const int ne = 40;                            //number of elements
     const double dt = 1./200.;                    //time increment
     const int nTimesteps = 800;                   //number of timesteps
-    const int rkStages = 4;                       //number of Runge-Kutta stages (3 or 4)
+    const int rkStages = 3;                       //number of Runge-Kutta stages (2, 3, or 4)
     double t = 0.;                                //start time
     
     int i, j, k;
     
+    //Initialize mesh:
+    DGmesh M( a, b, np, ne );
+    
     //Equally spaced element boundary points.  Alternatively, these
     //may come from some other place and might not be equally spaced:
     double xb[ne+1];
-    getElementBoundaries( ne, a, b, xb );
+    M.getElementBoundaries( xb );
+    // getElementBoundaries( ne, a, b, xb );
     
     //The array of element widths (all the same on an equispaced grid),
     //and also the center of mass for each element:
     double dx[ne];
     double xc[ne];
-    getElementWidthsAndCenters( ne, xb, dx, xc );
+    M.getElementWidthsAndCenters( dx, xc );
+    // getElementWidthsAndCenters( ne, xb, dx, xc );
     
     //GLL nodes and weights on standard interval [-1,1]:
     double xGLL[np];
     double wGLL[np];
-    i = getGLL( np, xGLL, wGLL );
+    M.getGLL( xGLL, wGLL );
+    // i = getGLL( np, xGLL, wGLL );
+    
+    const int N = M.getN();
     
     //x-coordinates and quadrature weights, each given as a 1D array:
-    const int N = np*ne;
     double x[N];
     double w[N];
-    getCoordsAndQuadWeights( ne, np, xc, dx, xGLL, wGLL, x, w );
+    M.getCoordsAndQuadWeights( x, w );
+    // getCoordsAndQuadWeights( ne, np, xc, dx, xGLL, wGLL, x, w );
     
     //Create the cardinal derivatives:
     double dphi0dx[N];
     double dphi1dx[N];
     double dphi2dx[N];
     double dphi3dx[N];
-    i = getCardinalDerivatives( ne, np, x, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
+    M.getCardinalDerivatives( dphi0dx, dphi1dx, dphi2dx, dphi3dx );
+    // i = getCardinalDerivatives( ne, np, x, dphi0dx, dphi1dx, dphi2dx, dphi3dx );
     
     //initial rho and velocity u:
     double rho[N];
@@ -82,14 +98,14 @@ int main()
     outFile << nTimesteps;
     outFile.close();
     
-    //save vector of all x-coordinates:
+    //save array of all x-coordinates:
     outFile.open( "x.txt" );
     for( i=0; i<N; i++ ) {
         outFile << x[i] << " ";
     }
     outFile.close();
     
-    //save vector of rho values at initial time:
+    //save array of rho values at initial time:
     outFile.open( "./snapshots/000000.txt" );
     for( i=0; i<N; i++ ) {
         outFile << rho[i] << " ";
@@ -105,7 +121,11 @@ int main()
     double alphaMax;
     double tmpD;
     for( k=0; k<nTimesteps; k++ ) {
-        if( rkStages == 3 ) {
+        if( rkStages == 2 ) {
+            rk2( i, j, ne, np, N, u, x, t, alphaMax, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx,
+            dt, s1, s2, s3, s4, tmp, tmpD );
+        }
+        else if( rkStages == 3 ) {
             rk3( i, j, ne, np, N, u, x, t, alphaMax, w, rho, dphi0dx, dphi1dx, dphi2dx, dphi3dx,
             dt, s1, s2, s3, s4, tmp, tmpD );
         }
@@ -114,7 +134,7 @@ int main()
             dt, s1, s2, s3, s4, tmp, tmpD );
         }
         else {
-            std::cerr << "Error:  rkStages should be 3 or 4.";
+            std::cerr << "Error:  rkStages should be 2, 3, or 4.";
             return EXIT_FAILURE;
         }
         std::stringstream s;

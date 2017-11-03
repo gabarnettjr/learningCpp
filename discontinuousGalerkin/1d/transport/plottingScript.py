@@ -23,7 +23,7 @@ for i in np.arange(0,nTimesteps+1,delt) :
     plt.cla()
 
 plt.ioff()
-#plt.plot( x, rho - np.exp(-10*x**2) )
-plt.plot( x, rho - np.cos(np.pi*x) )
+plt.plot( x, rho - np.exp(-10*x**2) )
+#plt.plot( x, rho - np.cos(np.pi*x) )
 #plt.plot( x, rho )
 plt.show()
