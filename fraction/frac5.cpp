@@ -2,8 +2,7 @@
 #include <cstdlib>
 #include "frac5.hpp"
 
-namespace CPPbook
-{
+namespace CPPbook {
 	
 	//fraction constructor with no inputs:
 	Fraction::Fraction()

@@ -50,6 +50,7 @@ DGmesh::DGmesh( double A, double B, int NP, int NE ) {
     }
     ne = NE;
     
+    //total number of nodes (degrees of freedom):
     N = np*ne;
     
     //element boundaries:

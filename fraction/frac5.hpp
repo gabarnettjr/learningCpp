@@ -4,10 +4,10 @@
 
 #include <iostream>
 
-namespace CPPbook
-{
-	class Fraction
-	{
+namespace CPPbook {
+
+	class Fraction {
+
 		private:
 
 			int numer;
@@ -39,15 +39,13 @@ namespace CPPbook
 	};
 	
 	inline
-	std::ostream& operator << ( std::ostream& strm, const Fraction& f )
-	{
+	std::ostream& operator << ( std::ostream& strm, const Fraction& f ) {
 		f.printOn(strm);
 		return strm;
 	}
 	
 	inline
-	std::istream& operator >> ( std::istream& strm, Fraction& f )
-	{
+	std::istream& operator >> ( std::istream& strm, Fraction& f ) {
 		f.scanFrom(strm);
 		return strm;
 	}

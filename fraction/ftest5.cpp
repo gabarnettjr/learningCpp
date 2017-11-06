@@ -13,15 +13,13 @@ int main( int argc, char* argv[] )
 	std::cout << a << std::endl;
 	
 	std::cout << "Enter fraction (numer/denom):" << std::endl;
-	if( ! ( std::cin >> x ) )
-	{
+	if( ! ( std::cin >> x ) ) {
 		std::cerr << "Error during input of fraction." << std::endl;
 		return EXIT_FAILURE;
 	}
 	std::cout << "Input was: " << x << std::endl;
 	
-	while( x <= 1000 )
-	{
+	while( x <= 1000 ) {
 		x =  x*a;
 		std::cout << x << std::endl;
 	}
