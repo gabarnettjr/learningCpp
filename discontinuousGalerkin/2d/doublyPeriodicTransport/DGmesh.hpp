@@ -11,7 +11,7 @@ class DGmesh {
         DGmesh( double, double, double, double, int, int, int );
         int getDFperLayer() { return n; }
         int getDF() { return N; }
-        double getDz() { return dz; }
+        double getLayerThickness() { return dz; }
         void getElementBoundaries( double[] );
         void getElementWidthsAndCenters( double[], double[] );
         void getGLL( double[], double[] );
@@ -27,7 +27,7 @@ class DGmesh {
         double d;           //top endpoint
         int np;             //number of polynomials per element
         int ne;             //number of elements
-        int nLev;
+        int nLev;           //number of vertical levels
         
         int n;              //degrees of freedom per layer
         int N;              //total degrees of freedom
@@ -39,7 +39,7 @@ class DGmesh {
         double* x;          //x-coordinates (single layer)
         double* z;          //array of z-coordinates with one ghost layer
         double dz;
-        double* weights;          //quadrature weights (single layer)
+        double* weights;    //quadrature weights (single layer)
         double* dphi0dx;    //derivative of cardinal function phi0
         double* dphi1dx;    //derivative of cardinal function phi1
         double* dphi2dx;    //derivative of cardinal function phi2
@@ -179,7 +179,7 @@ DGmesh::DGmesh( double A, double B, double C, double D, int NP, int NE, int NLEV
         dz = 0.;
     }
     else {
-        dz = ( d - c ) / ( nLev - 2 );
+        dz = ( d - c ) / ( nLev );
     }
     
     //array of layer midpoints:
@@ -189,7 +189,7 @@ DGmesh::DGmesh( double A, double B, double C, double D, int NP, int NE, int NLEV
     }
     else {
         for( int i=0; i<nLev; i++ ) {
-            z[i] = ( c - dz/2. ) + i * dz;
+            z[i] = ( c + dz/2. ) + i * dz;
         }
     }
 }

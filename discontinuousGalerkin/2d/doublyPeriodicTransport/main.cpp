@@ -23,11 +23,11 @@ int main()
     const double b = 1.;                          //right endpoint
     const double c = -1.;                         //bottom endpoint
     const double d = 1.;                          //top endpoint
-    const int np = 2;                             //number of polynomials per element
-    const int ne = 40;                            //number of elements
-    const int nLev = 1;                          //number of vertical levels
-    const double dt = 1./200.;                    //time increment
-    const int nTimesteps = 800;                   //number of timesteps
+    const int np = 3;                             //number of polynomials per element
+    const int ne = 20;                            //number of elements
+    const int nLev = 40;                          //number of vertical levels
+    const double dt = 1./100.;                    //time increment
+    const int nTimesteps = 400;                   //number of timesteps
     const int rkStages = 3;                       //number of Runge-Kutta stages (2, 3, or 4)
     double t = 0.;                                //start time
     
@@ -67,23 +67,25 @@ int main()
     double dphi3dx[n];
     M.getCardinalDerivatives( dphi0dx, dphi1dx, dphi2dx, dphi3dx );
     
+    //array of layer midpoints (z-coordinates):
     double z[nLev];
     M.getLayerMidpoints( z );
     
-    //number of nodes total:
+    //uniform layer thickness:
+    const double dz = M.getLayerThickness();
+    
+    //total number of nodes (degrees of freedom):
     const int N = M.getDF();
     
-    //initial rho and velocity u:
+    //initial density rho and velocity (u,w):
     double rho[N];
     double u[N];
     double w[N];
     for( ell=0; ell<nLev; ell++ ) {
-        for( i=0; i<ne; i++ ) {
-            for( j=0; j<np; j++ ) {
-                rho[ell*n+(np*i+j)] = rhoIC( x[np*i+j], z[ell] );
-                u[ell*n+(np*i+j)] = uFunc( x[np*i+j], z[ell], t );
-                w[ell*n+(np*i+j)] = wFunc( x[np*i+j], z[ell], t );
-            }
+        for( i=0; i<n; i++ ) {
+            rho[ell*n+i] = rhoIC( x[i], z[ell] );
+            u[ell*n+i] = uFunc( x[i], z[ell], t );
+            w[ell*n+i] = wFunc( x[i], z[ell], t );
         }
     }
     
@@ -122,6 +124,11 @@ int main()
     }
     outFile.close();
     
+    //save layer thickness:
+    outFile.open( "dz.txt" );
+    outFile << dz;
+    outFile.close();
+    
     //save array of rho values at initial time:
     outFile.open( "./snapshots/000000.txt" );
     for( i=0; i<N; i++ ) {
@@ -136,19 +143,18 @@ int main()
     double s4[N];
     double tmp[N];
     double alphaMax;
-    double betaMax;
     double tmpD;
-    for( k=0; k<nTimesteps; k++ ) {
+    for( ell=0; ell<nTimesteps; ell++ ) {
         if( rkStages == 2 ) {
-            rk2( i, j, ne, np, nLev, n, N, u, w, x, z, t, alphaMax, betaMax, weights, rho,
+            rk2( i, j, k, ne, np, nLev, n, N, u, w, x, z, t, dz, alphaMax, weights, rho,
             dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4, tmp, tmpD );
         }
         else if( rkStages == 3 ) {
-            rk3( i, j, ne, np, nLev, n, N, u, w, x, z, t, alphaMax, betaMax, weights, rho,
+            rk3( i, j, k, ne, np, nLev, n, N, u, w, x, z, t, dz, alphaMax, weights, rho,
             dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4, tmp, tmpD );
         }
         else if( rkStages == 4 ) {
-            rk4( i, j, ne, np, nLev, n, N, u, w, x, z, t, alphaMax, betaMax, weights, rho,
+            rk4( i, j, k, ne, np, nLev, n, N, u, w, x, z, t, dz, alphaMax, weights, rho,
             dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4, tmp, tmpD );
         }
         else {
@@ -156,7 +162,7 @@ int main()
             std::exit( EXIT_FAILURE );
         }
         std::stringstream s;
-        s << "./snapshots/" << std::setfill('0') << std::setw(6) << k+1 << ".txt";
+        s << "./snapshots/" << std::setfill('0') << std::setw(6) << ell+1 << ".txt";
         outFile.open( s.str() );
         for( i=0; i<N; i++ ) {
             outFile << rho[i] << " ";
