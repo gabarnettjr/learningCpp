@@ -48,6 +48,7 @@ int main()
     double wGLL[np];
     M.getGLL( xGLL, wGLL );
     
+    //total number of nodes (degrees of freedom)
     const int N = M.getN();
     
     //x-coordinates and quadrature weights, each given as a 1D array:
@@ -72,7 +73,7 @@ int main()
         }
     }
     
-    //Open filestream for saving things:
+    //Open output file stream for saving things:
     std::ofstream outFile;
     
     //Precision for printing to text files:
