@@ -23,12 +23,12 @@ int main()
     const double b = 1.;                          //right endpoint
     const double c = -1.;                         //bottom endpoint
     const double d = 1.;                          //top endpoint
-    const int np = 3;                             //number of polynomials per element
+    const int np = 4;                             //number of polynomials per element
     const int ne = 20;                            //number of elements
     const int nLev = 40;                          //number of vertical levels
     const double dt = 1./100.;                    //time increment
     const int nTimesteps = 400;                   //number of timesteps
-    const int rkStages = 3;                       //number of Runge-Kutta stages (2, 3, or 4)
+    const int rkStages = 4;                       //number of Runge-Kutta stages (2, 3, or 4)
     double t = 0.;                                //start time
     
     int i, j, k, ell;
@@ -94,6 +94,26 @@ int main()
     
     //Precision for printing to text files:
     const int pr = 16;
+    
+    //Save number of polynomials per element:
+    outFile.open( "np.txt" );
+    outFile << np;
+    outFile.close();
+    
+    //Save number of elements:
+    outFile.open( "ne.txt" );
+    outFile << ne;
+    outFile.close();
+    
+    //Save number of vertical levels:
+    outFile.open( "nLev.txt" );
+    outFile << nLev;
+    outFile.close();
+    
+    //Save nodes (degrees of freedom) per layer:
+    outFile.open( "n.txt" );
+    outFile << n;
+    outFile.close();
     
     //Save start time:
     outFile.open( "t.txt" );
