@@ -31,6 +31,7 @@ class DGmesh {
         
         int n;              //degrees of freedom per layer
         int N;              //total degrees of freedom
+        double dz;          //layer thickness
         double* xGLL;       //GLL quadrature nodes on [-1,1]
         double* wGLL;       //GLL quadrature weights on [-1,1]
         double* xb;         //element boundaries (single layer)
@@ -38,7 +39,6 @@ class DGmesh {
         double* xc;         //element centers (single layer)
         double* x;          //x-coordinates (single layer)
         double* z;          //array of z-coordinates with one ghost layer
-        double dz;
         double* weights;    //quadrature weights (single layer)
         double* dphi0dx;    //derivative of cardinal function phi0
         double* dphi1dx;    //derivative of cardinal function phi1
@@ -196,34 +196,34 @@ DGmesh::DGmesh( double A, double B, double C, double D, int NP, int NE, int NLEV
 
 //Accessors:
 
-void DGmesh::getElementBoundaries( double XB[] ) {
+inline void DGmesh::getElementBoundaries( double XB[] ) {
     for( int i=0; i<ne+1; i++ ) {
         XB[i] = xb[i];
     }
 }
 
-void DGmesh::getElementWidthsAndCenters( double DX[], double XC[] ) {
+inline void DGmesh::getElementWidthsAndCenters( double DX[], double XC[] ) {
     for( int i=0; i<ne; i++ ) {
         DX[i] = dx[i];
         XC[i] = xc[i];
     }
 }
 
-void DGmesh::getGLL( double Xgll[], double Wgll[] ) {
+inline void DGmesh::getGLL( double Xgll[], double Wgll[] ) {
     for( int i=0; i<np; i++ ) {
         Xgll[i] = xGLL[i];
         Wgll[i] = wGLL[i];
     }
 }
 
-void DGmesh::getCoordsAndQuadWeights( double X[], double W[] ) {
+inline void DGmesh::getCoordsAndQuadWeights( double X[], double W[] ) {
     for( int i=0; i<n; i++ ) {
         X[i] = x[i];
         W[i] = weights[i];
     }
 }
 
-void DGmesh::getCardinalDerivatives( double Dphi0dx[], double Dphi1dx[], double Dphi2dx[], double Dphi3dx[] ) {
+inline void DGmesh::getCardinalDerivatives( double Dphi0dx[], double Dphi1dx[], double Dphi2dx[], double Dphi3dx[] ) {
     for( int i=0; i<n; i++ ) {
         Dphi0dx[i] = dphi0dx[i];
         Dphi1dx[i] = dphi1dx[i];
@@ -232,7 +232,7 @@ void DGmesh::getCardinalDerivatives( double Dphi0dx[], double Dphi1dx[], double 
     }
 }
 
-void DGmesh::getLayerMidpoints( double Z[] ) {
+inline void DGmesh::getLayerMidpoints( double Z[] ) {
     for( int i=0; i<nLev; i++ ) {
         Z[i] = z[i];
     }

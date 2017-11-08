@@ -1,40 +1,49 @@
-import numpy as np
+import numpy
 import matplotlib.pyplot as plt
 
-t = float( np.loadtxt( "t.txt" ) )
-dt = float( np.loadtxt( "dt.txt" ) )
-x = np.loadtxt( "x.txt" )
-z = np.loadtxt( "z.txt" )
-dz = float( np.loadtxt( "dz.txt" ) )
+np = int( numpy.loadtxt( "np.txt" ) )
+ne = int( numpy.loadtxt( "ne.txt" ) )
+nTimesteps = int( numpy.loadtxt("nTimesteps.txt") )
+t = float( numpy.loadtxt( "t.txt" ) )
+dt = float( numpy.loadtxt( "dt.txt" ) )
+x = numpy.loadtxt( "x.txt" )
+z = numpy.loadtxt( "z.txt" )
+
 a = min(x)
 b = max(x)
+dz = z[1] - z[0]
 c = min(z)-dz/2.
 d = max(z)+dz/2.
-nPoly = int( np.loadtxt( "np.txt" ) )
-ne = int( np.loadtxt( "ne.txt" ) )
-nLev = int( np.loadtxt( "nLev.txt" ) )
-n = int( np.loadtxt( "n.txt" ) )
-nTimesteps = int( np.loadtxt("nTimesteps.txt") )
-delt = 20
+nLev = len(z)
+n = np * ne
+delt = 20                                           #number of timesteps between plots
+zz = numpy.transpose( numpy.tile( z, (np,1) ) )
 
-zz = np.transpose( np.tile( z, (nPoly,1) ) )
-#plt.ion()
-for i in np.arange(0,nTimesteps+1,delt) :
-    rho = np.loadtxt( './snapshots/' + str(i).zfill(6) + '.txt' )
-    for j in range(ne) :
-        xx = np.tile( x[j*nPoly:(j+1)*nPoly], (nLev,1) )
-        tmp = rho[j*nPoly:(j+1)*nPoly];
-        for k in np.arange(1,nLev) :
-            tmp = np.vstack(( tmp, rho[k*n+j*nPoly:k*n+(j+1)*nPoly] ))
-        plt.contourf( xx, zz, tmp )
-    plt.axis( [a,b,c,d] )
-    plt.title( '{0:02.3f}'.format(t) )
-    t = t + delt*dt
-    plt.waitforbuttonpress()
-    plt.cla()
-
-#plt.ioff()
-#plt.plot( x, rho - np.exp(-10*x**2) )
-#plt.plot( x, rho - np.cos(np.pi*x) )
-#plt.plot( x, rho )
-#plt.show()
+for i in numpy.arange(0,nTimesteps+1,delt) :
+    rho = numpy.loadtxt( './snapshots/' + str(i).zfill(6) + '.txt' )
+    if i == nTimesteps :
+        for j in range(ne) :
+            xx = numpy.tile( x[j*np:(j+1)*np], (nLev,1) ) 
+            approx = rho[j*np:(j+1)*np]
+            for k in numpy.arange(1,nLev) :
+                approx = numpy.vstack(( approx, rho[k*n+j*np:k*n+(j+1)*np] ))
+            exact = numpy.exp( -10 * ( xx**2 + zz**2 ) )
+            plt.contourf( xx, zz, approx-exact, numpy.linspace(-.06,.06,13) )
+        plt.axis( [a,b,c,d] )
+        plt.title( 'approx - exact, t = {0:02.3f}'.format(t) )
+        plt.colorbar()
+        plt.waitforbuttonpress()
+        plt.clf()
+    else :
+        for j in range(ne) :
+            xx = numpy.tile( x[j*np:(j+1)*np], (nLev,1) ) 
+            approx = rho[j*np:(j+1)*np]
+            for k in numpy.arange(1,nLev) :
+                approx = numpy.vstack(( approx, rho[k*n+j*np:k*n+(j+1)*np] ))
+            plt.contourf( xx, zz, approx, numpy.arange(-.15,1.25,.1) )
+        plt.axis( [a,b,c,d] )
+        plt.title( 'numerical solution, t = {0:02.3f}'.format(t) )
+        plt.colorbar()
+        t = t + delt*dt
+        plt.waitforbuttonpress()
+        plt.clf()

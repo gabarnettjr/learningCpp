@@ -14,7 +14,7 @@
 // (*) mkdir snapshots
 // (*) g++ DGmesh.hpp functions.hpp main.cpp
 // (*) ./a
-// (*) python plottingScript.py (push any key to advance to next frame)
+// (*) python surfingScript.py (push any key to advance to next frame)
 
 int main()
 {   
@@ -25,8 +25,8 @@ int main()
     const double d = 1.;                          //top endpoint
     const int np = 4;                             //number of polynomials per element
     const int ne = 20;                            //number of elements
-    const int nLev = 40;                          //number of vertical levels
-    const double dt = 1./100.;                    //time increment
+    const int nLev = 80;                          //number of vertical levels
+    const double dt = 1./100.;                     //time increment
     const int nTimesteps = 400;                   //number of timesteps
     const int rkStages = 4;                       //number of Runge-Kutta stages (2, 3, or 4)
     double t = 0.;                                //start time
@@ -105,16 +105,6 @@ int main()
     outFile << ne;
     outFile.close();
     
-    //Save number of vertical levels:
-    outFile.open( "nLev.txt" );
-    outFile << nLev;
-    outFile.close();
-    
-    //Save nodes (degrees of freedom) per layer:
-    outFile.open( "n.txt" );
-    outFile << n;
-    outFile.close();
-    
     //Save start time:
     outFile.open( "t.txt" );
     outFile << std::scientific << std::setprecision(pr) << t;
@@ -142,11 +132,6 @@ int main()
     for( i=0; i<nLev; i++ ) {
         outFile << z[i] << " ";
     }
-    outFile.close();
-    
-    //save layer thickness:
-    outFile.open( "dz.txt" );
-    outFile << dz;
     outFile.close();
     
     //save array of rho values at initial time:
