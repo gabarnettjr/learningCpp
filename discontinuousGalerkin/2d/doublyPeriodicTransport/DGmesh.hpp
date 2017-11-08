@@ -9,9 +9,11 @@ class DGmesh {
     public:
         
         DGmesh( double, double, double, double, int, int, int );
+        
         int getDFperLayer() { return n; }
         int getDF() { return N; }
         double getLayerThickness() { return dz; }
+        
         void getElementBoundaries( double[] );
         void getElementWidthsAndCenters( double[], double[] );
         void getGLL( double[], double[] );
@@ -38,7 +40,7 @@ class DGmesh {
         double* dx;         //element widths (single layer)
         double* xc;         //element centers (single layer)
         double* x;          //x-coordinates (single layer)
-        double* z;          //array of z-coordinates with one ghost layer
+        double* z;          //array of z-coordinates (layer midpoints)
         double* weights;    //quadrature weights (single layer)
         double* dphi0dx;    //derivative of cardinal function phi0
         double* dphi1dx;    //derivative of cardinal function phi1
@@ -62,25 +64,11 @@ DGmesh::DGmesh( double A, double B, double C, double D, int NP, int NE, int NLEV
     ne = NE;
     nLev = NLEV;
     
-    //number of nodes per level:
+    //number of nodes (degrees of freedom) per level:
     n = np * ne;
 
     //total number of degrees of freedom:
     N = n * nLev;
-    
-    //element boundaries:
-    xb = new double[ne+1];
-    for( int i=0; i<ne+1; i++ ) {
-        xb[i] = a + i*(b-a)/ne;
-    }
-    
-    //element widths and centers:
-    dx = new double[ne];
-    xc = new double[ne];
-    for( int i=0; i<ne; i++ ) {
-        dx[i] = xb[i+1] - xb[i];
-        xc[i] = ( xb[i] + xb[i+1] ) / 2.;
-    }
     
     //GLL nodes and weights on [-1,1]:
     xGLL = new double[np];
@@ -96,6 +84,20 @@ DGmesh::DGmesh( double A, double B, double C, double D, int NP, int NE, int NLEV
 	else if( np == 4 ) {
         xGLL[0] = -1.;  xGLL[1] = -sqrt(5.)/5.;  xGLL[2] = sqrt(5.)/5;  xGLL[3] = 1.;
         wGLL[0] = 1./6.;  wGLL[1] = 5./6.;  wGLL[2] = 5./6.;  wGLL[3] = 1./6.;
+    }
+    
+    //element boundaries:
+    xb = new double[ne+1];
+    for( int i=0; i<ne+1; i++ ) {
+        xb[i] = a + i*(b-a)/ne;
+    }
+    
+    //element widths and centers:
+    dx = new double[ne];
+    xc = new double[ne];
+    for( int i=0; i<ne; i++ ) {
+        dx[i] = xb[i+1] - xb[i];
+        xc[i] = ( xb[i] + xb[i+1] ) / 2.;
     }
     
     //nodes and quadrature weights in a single layer:
