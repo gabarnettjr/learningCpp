@@ -15,7 +15,6 @@ class DG {
         
         int getDFperLayer() { return n; }
         int getDF() { return N; }
-        double getLayerThickness() { return dz; }
         void getXcoords( double[] );
         void getLayerMidpoints( double[] );
         

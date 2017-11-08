@@ -46,9 +46,6 @@ int main()
     double z[nLev];
     M.getLayerMidpoints( z );
     
-    //uniform layer thickness:
-    const double dz = M.getLayerThickness();
-    
     //total number of nodes (degrees of freedom):
     const int N = M.getDF();
     
@@ -116,7 +113,7 @@ int main()
     
     ///////////////////////////////////////////////////////////////////////
     
-    //Time stepping:
+    //Time stepping (and saving rho as it changes):
     for( j=0; j<nTimesteps; j++ ) {
         //advance rho and t with a single Runge-Kutta time step:
         M.rk( rho );
