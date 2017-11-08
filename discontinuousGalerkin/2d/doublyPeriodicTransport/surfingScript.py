@@ -16,11 +16,13 @@ c = min(z)-dz/2.
 d = max(z)+dz/2.
 nLev = len(z)
 n = np * ne
-delt = 20                                           #number of timesteps between plots
+delta = 20                                           #number of timesteps between plots
 zz = numpy.transpose( numpy.tile( z, (np,1) ) )
 
-for i in numpy.arange(0,nTimesteps+1,delt) :
+for i in numpy.arange(0,nTimesteps+1,delta) :
     rho = numpy.loadtxt( './snapshots/' + str(i).zfill(6) + '.txt' )
+    if i != 0 :
+        t = t + delta*dt
     if i == nTimesteps :
         for j in range(ne) :
             xx = numpy.tile( x[j*np:(j+1)*np], (nLev,1) ) 
@@ -44,6 +46,5 @@ for i in numpy.arange(0,nTimesteps+1,delt) :
         plt.axis( [a,b,c,d] )
         plt.title( 'numerical solution, t = {0:02.3f}'.format(t) )
         plt.colorbar()
-        t = t + delt*dt
         plt.waitforbuttonpress()
         plt.clf()

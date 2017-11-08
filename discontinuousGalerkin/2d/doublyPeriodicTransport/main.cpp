@@ -4,15 +4,14 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
-#include "DGmesh.hpp"
-#include "functions.hpp"
+#include "DG.hpp"
 
-//Numerical solution for the 2d doubly periodic transport equation using discontinuous Galerkin
-//laterally and second order finite differences vertically.
+//Numerical solution for the 2d doubly periodic transport equation using
+//discontinuous Galerkin laterally and second order finite differences vertically.
 
 //Instructions:
 // (*) mkdir snapshots
-// (*) g++ DGmesh.hpp functions.hpp main.cpp
+// (*) g++ functions.hpp DG.hpp main.cpp
 // (*) ./a
 // (*) python surfingScript.py (push any key to advance to next frame)
 
@@ -23,49 +22,25 @@ int main()
     const double b = 1.;                          //right endpoint
     const double c = -1.;                         //bottom endpoint
     const double d = 1.;                          //top endpoint
-    const int np = 4;                             //number of polynomials per element
-    const int ne = 20;                            //number of elements
-    const int nLev = 80;                          //number of vertical levels
-    const double dt = 1./100.;                     //time increment
-    const int nTimesteps = 400;                   //number of timesteps
+    const int np = 4;                             //number of polynomials per element (2, 3, or 4)
+    const int ne = 20;                            //number of elements per level (layer)
+    const int nLev = 80;                          //number of levels (layers)
     const int rkStages = 4;                       //number of Runge-Kutta stages (2, 3, or 4)
+    const int nTimesteps = 400;                   //number of timesteps
     double t = 0.;                                //start time
+    const double dt = 1./100.;                    //time increment
     
-    int i, j, k, ell;
+    int i, j;
     
-    //Initialize mesh:
-    DGmesh M( a, b, c, d, np, ne, nLev );
-    
-    //Equally spaced element boundary points.  Alternatively, these
-    //may come from some other place and might not be equally spaced:
-    double xb[ne+1];
-    M.getElementBoundaries( xb );
-    
-    //The array of element widths (all the same on an equispaced grid),
-    //and also the center of mass for each element:
-    double dx[ne];
-    double xc[ne];
-    M.getElementWidthsAndCenters( dx, xc );
-    
-    //GLL nodes and weights on standard interval [-1,1]:
-    double xGLL[np];
-    double wGLL[np];
-    M.getGLL( xGLL, wGLL );
+    //Initialize:
+    DG M( a, b, c, d, np, ne, nLev, rkStages, nTimesteps, t, dt );
     
     //number of nodes per layer:
     const int n = M.getDFperLayer();
     
-    //x-coordinates and quadrature weights, each given as a 1D array:
+    //x-coordinates:
     double x[n];
-    double weights[n];
-    M.getCoordsAndQuadWeights( x, weights );
-    
-    //Create the cardinal derivatives:
-    double dphi0dx[n];
-    double dphi1dx[n];
-    double dphi2dx[n];
-    double dphi3dx[n];
-    M.getCardinalDerivatives( dphi0dx, dphi1dx, dphi2dx, dphi3dx );
+    M.getXcoords( x );
     
     //array of layer midpoints (z-coordinates):
     double z[nLev];
@@ -77,17 +52,15 @@ int main()
     //total number of nodes (degrees of freedom):
     const int N = M.getDF();
     
-    //initial density rho and velocity (u,w):
+    //initial density rho:
     double rho[N];
-    double u[N];
-    double w[N];
-    for( ell=0; ell<nLev; ell++ ) {
+    for( j=0; j<nLev; j++ ) {
         for( i=0; i<n; i++ ) {
-            rho[ell*n+i] = rhoIC( x[i], z[ell] );
-            u[ell*n+i] = uFunc( x[i], z[ell], t );
-            w[ell*n+i] = wFunc( x[i], z[ell], t );
+            rho[j*n+i] = rhoIC( x[i], z[j] );
         }
     }
+    
+    ///////////////////////////////////////////////////////////////////////
     
     //Open output file stream for saving things:
     std::ofstream outFile;
@@ -141,33 +114,15 @@ int main()
     }
     outFile.close();
     
+    ///////////////////////////////////////////////////////////////////////
+    
     //Time stepping:
-    double s1[N];
-    double s2[N];
-    double s3[N];
-    double s4[N];
-    double tmp[N];
-    double alphaMax;
-    double tmpD;
-    for( ell=0; ell<nTimesteps; ell++ ) {
-        if( rkStages == 2 ) {
-            rk2( i, j, k, ne, np, nLev, n, N, u, w, x, z, t, dz, alphaMax, weights, rho,
-            dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4, tmp, tmpD );
-        }
-        else if( rkStages == 3 ) {
-            rk3( i, j, k, ne, np, nLev, n, N, u, w, x, z, t, dz, alphaMax, weights, rho,
-            dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4, tmp, tmpD );
-        }
-        else if( rkStages == 4 ) {
-            rk4( i, j, k, ne, np, nLev, n, N, u, w, x, z, t, dz, alphaMax, weights, rho,
-            dphi0dx, dphi1dx, dphi2dx, dphi3dx, dt, s1, s2, s3, s4, tmp, tmpD );
-        }
-        else {
-            std::cerr << "Error:  rkStages should be 2, 3, or 4.";
-            std::exit( EXIT_FAILURE );
-        }
+    for( j=0; j<nTimesteps; j++ ) {
+        //advance rho and t with a single Runge-Kutta time step:
+        M.rk( rho );
+        //save new array rho:
         std::stringstream s;
-        s << "./snapshots/" << std::setfill('0') << std::setw(6) << ell+1 << ".txt";
+        s << "./snapshots/" << std::setfill('0') << std::setw(6) << j+1 << ".txt";
         outFile.open( s.str() );
         for( i=0; i<N; i++ ) {
             outFile << rho[i] << " ";
