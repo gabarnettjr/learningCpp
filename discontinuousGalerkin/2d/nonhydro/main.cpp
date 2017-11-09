@@ -6,7 +6,7 @@
 #include <iomanip>
 #include "DG.hpp"
 
-//Numerical solution for the 2d doubly periodic transport equation using
+//Numerical solution for the 2d nonhydrostatic governing equations using
 //discontinuous Galerkin laterally and second order finite differences vertically.
 
 //Instructions:
@@ -53,9 +53,15 @@ int main()
     
     //initial density rho:
     double rho[N];
+    double rhoU[N];
+    double rhoW[N];
+    double rhoTh[N];
     for( j=0; j<nLev; j++ ) {
         for( i=0; i<n; i++ ) {
-            rho[j*n+i] = rhoIC( x[i], z[j] );
+            rho[j*n+i]   = rhoIC( x[i], z[j] );
+            rhoU[j*n+i]  = rhoUic( x[i], z[j] );
+            rhoW[j*n+i]  = rhoWic( x[i], z[j] );
+            rhoTh[j*n+i] = rhoThIC( x[i], z[j] );
         }
     }
     
@@ -106,10 +112,28 @@ int main()
     }
     outFile.close();
     
-    //save array of rho values at initial time:
-    outFile.open( "./snapshots/000000.txt" );
+    //save rho at initial time:
+    outFile.open( "./rho/000000.txt" );
     for( i=0; i<N; i++ ) {
         outFile << rho[i] << " ";
+    }
+    outFile.close();
+    //save rhoU at initial time:
+    outFile.open( "./rhoU/000000.txt" );
+    for( i=0; i<N; i++ ) {
+        outFile << rhoU[i] << " ";
+    }
+    outFile.close();
+    //save rhoW at initial time:
+    outFile.open( "./rhoW/000000.txt" );
+    for( i=0; i<N; i++ ) {
+        outFile << rhoW[i] << " ";
+    }
+    outFile.close();
+    //save rhoTh at initial time:
+    outFile.open( "./rhoTh/000000.txt" );
+    for( i=0; i<N; i++ ) {
+        outFile << rhoTh[i] << " ";
     }
     outFile.close();
     
@@ -117,14 +141,40 @@ int main()
     
     //Time stepping (and saving rho as it changes):
     for( j=0; j<nTimesteps; j++ ) {
-        //advance rho and t with a single Runge-Kutta time step:
-        M.rk( rho );
-        //save new array rho:
-        std::stringstream s;
-        s << "./snapshots/" << std::setfill('0') << std::setw(6) << j+1 << ".txt";
-        outFile.open( s.str() );
+        
+        //advance (rho,rhoU,rhoW,rhoTh) and t with a single Runge-Kutta time step:
+        M.rk( rho, rhoU, rhoW, rhoTh );
+        
+        //save rho:
+        std::stringstream s_rho;
+        s_rho << "./rho/" << std::setfill('0') << std::setw(6) << j+1 << ".txt";
+        outFile.open( s_rho.str() );
         for( i=0; i<N; i++ ) {
             outFile << rho[i] << " ";
+        }
+        outFile.close();
+        //save rhoU:
+        std::stringstream s_rhoU;
+        s_rhoU << "./rhoU/" << std::setfill('0') << std::setw(6) << j+1 << ".txt";
+        outFile.open( s_rhoU.str() );
+        for( i=0; i<N; i++ ) {
+            outFile << rhoU[i] << " ";
+        }
+        outFile.close();
+        //save rhoW:
+        std::stringstream s_rhoW;
+        s_rhoW << "./rhoW/" << std::setfill('0') << std::setw(6) << j+1 << ".txt";
+        outFile.open( s_rhoW.str() );
+        for( i=0; i<N; i++ ) {
+            outFile << rhoW[i] << " ";
+        }
+        outFile.close();
+        //save rhoTh:
+        std::stringstream s_rhoTh;
+        s_rhoTh << "./rhoTh/" << std::setfill('0') << std::setw(6) << j+1 << ".txt";
+        outFile.open( s_rhoTh.str() );
+        for( i=0; i<N; i++ ) {
+            outFile << rhoTh[i] << " ";
         }
         outFile.close();
     }

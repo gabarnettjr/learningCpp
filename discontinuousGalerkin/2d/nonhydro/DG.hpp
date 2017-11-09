@@ -21,8 +21,10 @@ class DG {
         void setGLL( double[], double[] );
         void setCardinalDerivatives( double[], double[], double[], double[] );
         
-        void odeFun( double[], double[] );
-        void rk( double[] );
+        void singleVariableRHS( const double[], const double[], const double[], double[] );
+        void odeFun( const double[], const double[], const double[], const double[],
+        double[], double[], double[], double[] );
+        void rk( double[], double[], double[], double[] );
     
     private:
         
@@ -53,16 +55,37 @@ class DG {
         double* dphi1dx;    //derivative of cardinal function phi1
         double* dphi2dx;    //derivative of cardinal function phi2
         double* dphi3dx;    //derivative of cardinal function phi3
-        double* u;          //horizontal velocity
-        double* w;          //vertical velocity
-        double* s1;         //RK stage 1
-        double* s2;         //RK stage 2
-        double* s3;         //RK stage 3
-        double* s4;         //RK stage 4
-        double* tmp;        //used inside rk
+        double* P;          //Pressure (diagnostic)
+        double* s1_rho;     //RK stage 1
+        double* s1_rhoU;
+        double* s1_rhoW;
+        double* s1_rhoTh;
+        double* s2_rho;     //RK stage 2
+        double* s2_rhoU;
+        double* s2_rhoW;
+        double* s2_rhoTh;
+        double* s3_rho;     //RK stage 3
+        double* s3_rhoU;
+        double* s3_rhoW;
+        double* s3_rhoTh;
+        double* s4_rho;     //RK stage 4
+        double* s4_rhoU;
+        double* s4_rhoW;
+        double* s4_rhoTh;
+        double* tmp_rho;    //used inside rk
+        double* tmp_rhoU;
+        double* tmp_rhoW;
+        double* tmp_rhoTh;
         double alphaMax;    //Lax-Friedrichs flux parameter
         double tmpD;        //used inside odeFun
+        double* F;
+        double* G;
         int i, j, k;        //used in for-loops
+        double Po;             //physical constants
+        double Cp;
+        double Cv;
+        double Rd;
+        double g;
 };
 
 DG::DG( const double& A, const double& B, const double& C, const double& D,
@@ -156,16 +179,34 @@ const int& RKSTAGES, const int& NTIMESTEPS, double& T, const double& DT ) {
         }
     }
     
-    //horizontal and vertical velocity:
-    u = new double[N];
-    w = new double[N];
-    
     //arrays needed for RK time stepping:
-    s1 = new double[N];
-    s2 = new double[N];
-    s3 = new double[N];
-    s4 = new double[N];
-    tmp = new double[N];
+    s1_rho    = new double[N];
+    s1_rhoU   = new double[N];
+    s1_rhoW   = new double[N];
+    s1_rhoTh  = new double[N];
+    s2_rho    = new double[N];
+    s2_rhoU   = new double[N];
+    s2_rhoW   = new double[N];
+    s2_rhoTh  = new double[N];
+    s3_rho    = new double[N];
+    s3_rhoU   = new double[N];
+    s3_rhoW   = new double[N];
+    s3_rhoTh  = new double[N];
+    s4_rho    = new double[N];
+    s4_rhoU   = new double[N];
+    s4_rhoW   = new double[N];
+    s4_rhoTh  = new double[N];
+    tmp_rho   = new double[N];
+    tmp_rhoU  = new double[N];
+    tmp_rhoW  = new double[N];
+    tmp_rhoTh = new double[N];
+    
+    //physical constants:
+    Po = 100000.;
+    Cp = 1004.;
+    Cv = 717.;
+    Rd = Cp - Cv;
+    g = 9.81;
     
 }
 
@@ -265,41 +306,31 @@ inline void DG::setCardinalDerivatives( double dphi0dx[], double dphi1dx[], doub
 
 //Functions related to time stepping:
 
-inline void DG::odeFun( double rho[], double rhoPrime[] ) {
-    //For each element, you have np ODEs:  (drho/dt)_i = RHS_i, for i = 0,...,np-1.
-    //This function computes RHS.  The output is the 1D array rhoPrime.
-    //Set parameter for the Lax-Friedrichs flux (LFF) for DG:
-    alphaMax = 0.;
-    for( i=0; i<N; i++ ) {
-        tmpD = std::abs( u[i] );
-        if( tmpD > alphaMax ) { alphaMax = tmpD; }
-    }
+inline void DG::singleVariableRHS( const double rho[], const double rhoU[], const double rhoW[],
+double rhoPrime[] ) {
     for( k=0; k<nLev; k++ ) {
         //lateral operations using DG:
         for( i=0; i<ne; i++ ) {
             if( np > 2 ) { rhoPrime[k*n+(np*i+1)] = 0; }
             if( np > 3 ) { rhoPrime[k*n+(np*i+2)] = 0; }
             if( i == 0 ) { //left-most node of left-most element (periodic BC enforcement and LFF):
-                rhoPrime[k*n+(np*i)] = ( rho[k*n+(n-1)]*u[k*n+(n-1)] + rho[k*n+(np*i)]*u[k*n+(np*i)] )/2.
+                rhoPrime[k*n+(np*i)] = ( rhoU[k*n+(n-1)] + rhoU[k*n+(np*i)] )/2.
                 - alphaMax * ( rho[k*n+(np*i)] - rho[k*n+(n-1)] );
             }
             else { //Lax-Friedrichs Flux (LFF) for the left-most node of all other elements:
-                rhoPrime[k*n+(np*i)] = ( rho[k*n+(np*i-1)]*u[k*n+(np*i-1)]
-                + rho[k*n+(np*i)]*u[k*n+(np*i)] )/2.
+                rhoPrime[k*n+(np*i)] = ( rhoU[k*n+(np*i-1)] + rhoU[k*n+(np*i)] )/2.
                 - alphaMax * ( rho[k*n+(np*i)] - rho[k*n+(np*i-1)] );
             }
             if( i == ne-1 ) { //right-most node of right-most element (periodic BC enforcement and LFF):
-                rhoPrime[k*n+(np*i+np-1)] = -( ( rho[k*n+(np*i+np-1)]*u[k*n+(np*i+np-1)]
-                + rho[k*n+(0)]*u[k*n+(0)] )/2.
+                rhoPrime[k*n+(np*i+np-1)] = -( ( rhoU[k*n+(np*i+np-1)] + rhoU[k*n+(0)] )/2.
                 - alphaMax * ( rho[k*n+(0)] - rho[k*n+(np*i+np-1)] ) );
             }
             else { //Lax-Friedrichs Flux (LFF) for the right-most node of all other elements:
-                rhoPrime[k*n+(np*i+np-1)] = -( ( rho[k*n+(np*i+np-1)]*u[k*n+(np*i+np-1)]
-                + rho[k*n+(np*i+np)]*u[k*n+(np*i+np)] )/2.
+                rhoPrime[k*n+(np*i+np-1)] = -( ( rhoU[k*n+(np*i+np-1)] + rhoU[k*n+(np*i+np)] )/2.
                 - alphaMax * ( rho[k*n+(np*i+np)] - rho[k*n+(np*i+np-1)] ) );
             }
             for( j=0; j<np; j++ ) { //the non-flux part of the RHS:
-                tmpD = weights[np*i+j] * ( rho[k*n+(np*i+j)] * u[k*n+(np*i+j)] ); 
+                tmpD = weights[np*i+j] * rhoU[k*n+(np*i+j)]; 
                 rhoPrime[k*n+(np*i)]   = rhoPrime[k*n+(np*i)]   + tmpD * dphi0dx[np*i+j];
                 rhoPrime[k*n+(np*i+1)] = rhoPrime[k*n+(np*i+1)] + tmpD * dphi1dx[np*i+j];
                 if( np > 2 ) { rhoPrime[k*n+(np*i+2)] = rhoPrime[k*n+(np*i+2)] + tmpD * dphi2dx[np*i+j]; }
@@ -310,112 +341,175 @@ inline void DG::odeFun( double rho[], double rhoPrime[] ) {
             }
         }
         //vertical operations using FD2:
-        if( nLev != 1 ) {
-            if( k == 0 ) {
-                for( i=0; i<n; i++ ) {
-                    rhoPrime[k*n+i] = rhoPrime[k*n+i]
-                    - ( rho[(k+1)*n+i]*w[(k+1)*n+i] - rho[(nLev-1)*n+i]*w[(nLev-1)*n+i] ) / (2*dz);
-                }
+        if( k == 0 ) {
+            for( i=0; i<n; i++ ) { //reflect over bottom boundary since w=0 there:
+                rhoPrime[k*n+i] = rhoPrime[k*n+i] - ( 2 * rhoW[(k+1)*n+i] ) / (2*dz);
             }
-            else if( k == nLev-1 ) {
-                for( i=0; i<n; i++ ) {
-                    rhoPrime[k*n+i] = rhoPrime[k*n+i]
-                    - ( rho[0*n+i]*w[0*n+i] - rho[(k-1)*n+i]*w[(k-1)*n+i] ) / (2*dz);
-                }
+        }
+        else if( k == nLev-1 ) { //reflect over top boundary since w=0 there:
+            for( i=0; i<n; i++ ) {
+                rhoPrime[k*n+i] = rhoPrime[k*n+i] - ( -2 * rhoW[(k-1)*n+i] ) / (2*dz);
             }
-            else {
-                for( i=0; i<n; i++ ) {
-                    rhoPrime[k*n+i] = rhoPrime[k*n+i]
-                    - ( rho[(k+1)*n+i]*w[(k+1)*n+i] - rho[(k-1)*n+i]*w[(k-1)*n+i] ) / (2*dz);
-                }
+        }
+        else {
+            for( i=0; i<n; i++ ) {
+                rhoPrime[k*n+i] = rhoPrime[k*n+i] - ( rhoW[(k+1)*n+i] - rhoW[(k-1)*n+i] ) / (2*dz);
             }
         }
     }
 }
 
-inline void DG::rk( double rho[] ) {
+inline void DG::odeFun( const double rho[], const double rhoU[], const double rhoW[], const double rhoTh[],
+double rhoPrime[], double rhoUprime[], double rhoWprime[], double rhoThPrime[] ) {
+    alphaMax = 0.;
+    for( i=0; i<N; i++ ) {
+        tmpD = std::abs( rhoU[i] / rho[i] );
+        if( tmpD > alphaMax ) { alphaMax = tmpD; }
+        P[i] = Po * pow( Rd*rhoTh[i]/Po, Cp/Cv );
+    }
+    //rho:
+    singleVariableRHS( rho, rhoU, rhoW, rhoPrime );
+    //rhoU:
+    for( i=0; i<N; i++ ) {
+        F[i] = rhoU[i] * rhoU[i] / rho[i] + P[i];
+        G[i] = rhoU[i] * rhoW[i] / rho[i];
+    }
+    singleVariableRHS( rhoU, F, G, rhoUprime );
+    //rhoW:
+    for( i=0; i<N; i++ ) {
+        F[i] = rhoW[i] * rhoW[i] / rho[i];
+    }
+    singleVariableRHS( rhoW, G, F, rhoWprime );
+    for( k=0; k<nLev; k++ ) { //adding missing terms ( - dP/dz - rho*g ):
+        if( k == 0 ) {
+            for( i=0; i<n; i++ ) { //lowest layer:
+                tmpD = P[k*n+i] + g*dz/2 * ( 3*rho[k*n+i] - rho[(k+1)*n+i] );
+                rhoWprime[k*n+i] = rhoWprime[k*n+i] - ( P[(k+1)*n+i] - tmpD ) / (2*dz)
+                - rho[k*n+i] * g;
+            }
+        }
+        else if( k == nLev-1 ) { //highest layer:
+            for( i=0; i<n; i++ ) {
+                tmpD = P[k*n+i] - g*dz/2 * ( 3*rho[k*n+i] - rho[(k-1)*n+i] );
+                rhoWprime[k*n+i] = rhoWprime[k*n+i] - ( tmpD - P[(k-1)*n+i] ) / (2*dz)
+                - rho[k*n+i] * g;
+            }
+        }
+        else {
+            for( i=0; i<n; i++ ) {
+                rhoWprime[k*n+i] = rhoWprime[k*n+i] - ( P[(k+1)*n+i] - P[(k-1)*n+i] ) / (2*dz)
+                - rho[k*n+i] * g;
+            }
+        }
+    }
+    //rhoTh:
+    for( i=0; i<N; i++ ) {
+        F[i] = rhoU[i] * rhoTh[i] / rho[i];
+        G[i] = rhoW[i] * rhoTh[i] / rho[i];
+    }
+    singleVariableRHS( rhoTh, F, G, rhoThPrime );
+}
+
+inline void DG::rk( double rho[], double rhoU[], double rhoW[], double rhoTh[] ) {
     if( rkStages == 2 ) {
         //2-stage, 2nd order RK.  The outputs are t and rho.  t increments and rho gets updated.
         //stage 1:
-        odeFun( rho, s1 );
+        odeFun( rho, rhoU, rhoW, rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //stage 2:
         t = t + dt/2.;
         for( j=0; j<nLev; j++ ) {
             for( i=0; i<n; i++ ) {
-                tmp[j*n+i] = rho[j*n+i] + dt/2. * s1[j*n+i];
-                u[j*n+i] = uFunc( x[i], z[j], t );
-                w[j*n+i] = wFunc( x[i], z[j], t );
+                tmp_rho[j*n+i]   = rho[j*n+i]   + dt/2. * s1_rho[j*n+i];
+                tmp_rhoU[j*n+i]  = rhoU[j*n+i]  + dt/2. * s1_rhoU[j*n+i];
+                tmp_rhoW[j*n+i]  = rhoW[j*n+i]  + dt/2. * s1_rhoW[j*n+i];
+                tmp_rhoTh[j*n+i] = rhoTh[j*n+i] + dt/2. * s1_rhoTh[j*n+i];
             }
         }
-        odeFun( tmp, s1 );
+        odeFun( tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //update t and get new value of rho:
         t = t + dt/2.;
         for( i=0; i<N; i++ ) {
-            rho[i] = rho[i] + dt * s1[i];
+            rho[i]   = rho[i]   + dt * s1_rho[i];
+            rhoU[i]  = rhoU[i]  + dt * s1_rhoU[i];
+            rhoW[i]  = rhoW[i]  + dt * s1_rhoW[i];
+            rhoTh[i] = rhoTh[i] + dt * s1_rhoTh[i];
         }
     }
     else if( rkStages == 3 ) {
         //3-stage, 3rd order RK.  The outputs are t and rho.  t increments and rho gets updated.
         //stage 1:
-        odeFun( rho, s1 );
+        odeFun( rho, rhoU, rhoW, rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //stage 2:
         t = t + dt/3.;
         for( j=0; j<nLev; j++ ) {
             for( i=0; i<n; i++ ) {
-                tmp[j*n+i] = rho[j*n+i] + dt/3. * s1[j*n+i];
-                u[j*n+i] = uFunc( x[i], z[j], t );
-                w[j*n+i] = wFunc( x[i], z[j], t );
+                tmp_rho[j*n+i]   = rho[j*n+i]   + dt/3. * s1_rho[j*n+i];
+                tmp_rhoU[j*n+i]  = rhoU[j*n+i]  + dt/3. * s1_rhoU[j*n+i];
+                tmp_rhoW[j*n+i]  = rhoW[j*n+i]  + dt/3. * s1_rhoW[j*n+i];
+                tmp_rhoTh[j*n+i] = rhoTh[j*n+i] + dt/3. * s1_rhoTh[j*n+i];
             }
         }
-        odeFun( tmp, s2 );
+        odeFun( tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s2_rho, s2_rhoU, s2_rhoW, s2_rhoTh );
         //stage 3:
         t = t + dt/3.;
         for( j=0; j<nLev; j++ ) {
             for( i=0; i<n; i++ ) {
-                tmp[j*n+i] = rho[j*n+i] + 2*dt/3. * s2[j*n+i];
-                u[j*n+i] = uFunc( x[i], z[j], t );
-                w[j*n+i] = wFunc( x[i], z[j], t );
+                tmp_rho[j*n+i]   = rho[j*n+i]   + 2*dt/3. * s2_rho[j*n+i];
+                tmp_rhoU[j*n+i]  = rhoU[j*n+i]  + 2*dt/3. * s2_rhoU[j*n+i];
+                tmp_rhoW[j*n+i]  = rhoW[j*n+i]  + 2*dt/3. * s2_rhoW[j*n+i];
+                tmp_rhoTh[j*n+i] = rhoTh[j*n+i] + 2*dt/3. * s2_rhoTh[j*n+i];
             }
         }
-        odeFun( tmp, s2 );
+        odeFun( tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s2_rho, s2_rhoU, s2_rhoW, s2_rhoTh );
         //update t and get new value of rho:
         t = t + dt/3.;
         for( i=0; i<N; i++ ) {
-            rho[i] = rho[i] + dt/4. * ( s1[i] + 3*s2[i] );
+            rho[i]   = rho[i]   + dt/4. * ( s1_rho[i]   + 3*s2_rho[i] );
+            rhoU[i]  = rhoU[i]  + dt/4. * ( s1_rhoU[i]  + 3*s2_rhoU[i] );
+            rhoW[i]  = rhoW[i]  + dt/4. * ( s1_rhoW[i]  + 3*s2_rhoW[i] );
+            rhoTh[i] = rhoTh[i] + dt/4. * ( s1_rhoTh[i] + 3*s2_rhoTh[i] );
         } 
     }
     else if( rkStages == 4 ) {
         //4-stage, 4th order RK.  The outputs are t and rho.  t increments and rho gets updated.
         //stage 1:
-        odeFun( rho, s1 );
+        odeFun( rho, rhoU, rhoW, rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //stage 2:
         t = t + dt/2.;
         for( j=0; j<nLev; j++ ) {
             for( i=0; i<n; i++ ) {
-                tmp[j*n+i] = rho[j*n+i] + dt/2. * s1[j*n+i];
-                u[j*n+i] = uFunc( x[i], z[j], t );
-                w[j*n+i] = wFunc( x[i], z[j], t );
+                tmp_rho[j*n+i]   = rho[j*n+i]   + dt/2. * s1_rho[j*n+i];
+                tmp_rhoU[j*n+i]  = rhoU[j*n+i]  + dt/2. * s1_rhoU[j*n+i];
+                tmp_rhoW[j*n+i]  = rhoW[j*n+i]  + dt/2. * s1_rhoW[j*n+i];
+                tmp_rhoTh[j*n+i] = rhoTh[j*n+i] + dt/2. * s1_rhoTh[j*n+i];
             }
         }
-        odeFun( tmp, s2 );
+        odeFun( tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s2_rho, s2_rhoU, s2_rhoW, s2_rhoTh );
         //stage 3:
         for( i=0; i<N; i++ ) {
-            tmp[i] = rho[i] + dt/2. * s2[i];
+            tmp_rho[i]   = rho[i]   + dt/2. * s2_rho[i];
+            tmp_rhoU[i]  = rhoU[i]  + dt/2. * s2_rhoU[i];
+            tmp_rhoW[i]  = rhoW[i]  + dt/2. * s2_rhoW[i];
+            tmp_rhoTh[i] = rhoTh[i] + dt/2. * s2_rhoTh[i];
         }
-        odeFun( tmp, s3 );
+        odeFun( tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s3_rho, s3_rhoU, s3_rhoW, s3_rhoTh );
         //stage 4:
         t = t + dt/2;
         for( j=0; j<nLev; j++ ) {
             for( i=0; i<n; i++ ) {
-                tmp[j*n+i] = rho[j*n+i] + dt * s3[j*n+i];
-                u[j*n+i] = uFunc( x[i], z[j], t );
-                w[j*n+i] = wFunc( x[i], z[j], t );
+                tmp_rho[j*n+i]   = rho[j*n+i]   + dt * s3_rho[j*n+i];
+                tmp_rhoU[j*n+i]  = rhoU[j*n+i]  + dt * s3_rhoU[j*n+i];
+                tmp_rhoW[j*n+i]  = rhoW[j*n+i]  + dt * s3_rhoW[j*n+i];
+                tmp_rhoTh[j*n+i] = rhoTh[j*n+i] + dt * s3_rhoTh[j*n+i];
             }
         }
-        odeFun( tmp, s4 );
+        odeFun( tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s4_rho, s4_rhoU, s4_rhoW, s4_rhoTh );
         //get new value:
         for( i=0; i<N; i++ ) {
-            rho[i] = rho[i] + dt/6. * ( s1[i] + 2*s2[i] + 2*s3[i] + s4[i] );
+            rho[i]   = rho[i]   + dt/6. * ( s1_rho[i]   + 2*s2_rho[i]   + 2*s3_rho[i]   + s4_rho[i] );
+            rhoU[i]  = rhoU[i]  + dt/6. * ( s1_rhoU[i]  + 2*s2_rhoU[i]  + 2*s3_rhoU[i]  + s4_rhoU[i] );
+            rhoW[i]  = rhoW[i]  + dt/6. * ( s1_rhoW[i]  + 2*s2_rhoW[i]  + 2*s3_rhoW[i]  + s4_rhoW[i] );
+            rhoTh[i] = rhoTh[i] + dt/6. * ( s1_rhoTh[i] + 2*s2_rhoTh[i] + 2*s3_rhoTh[i] + s4_rhoTh[i] );
         }
     }
 }

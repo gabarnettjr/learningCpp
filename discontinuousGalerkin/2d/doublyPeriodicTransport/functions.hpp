@@ -1,7 +1,6 @@
 #ifndef FUNCTIONS_HPP
 #define FUNCTIONS_HPP
 
-#include <iostream>
 #include <cmath>
 
 //Function describing the initial condition for rho, which should be periodic:
