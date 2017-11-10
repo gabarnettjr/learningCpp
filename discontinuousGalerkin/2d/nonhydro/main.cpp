@@ -27,7 +27,7 @@
 // (*) mkdir rho rhoU rhoW rhoTh
 // (*) g++ Constants.hpp DGmesh.hpp Variables.hpp TimeStepper.hpp main.cpp
 // (*) ./a
-// (*) python surfingScript.py (NOT WORKING YET)
+// (*) python surfingScript.py
 
 int main()
 {   
@@ -42,7 +42,7 @@ int main()
     const int rkStages = 4;                       //number of Runge-Kutta stages (2, 3, or 4)
     double t = 0.;                                //start time
     const double dt = 1./4.;                      //time increment
-    const int nTimesteps = 6000;                 //number of timesteps
+    const int nTimesteps = 6000;                  //number of timesteps
     const int saveDelta = 40;                     //number of time steps between saves
     
     int i, j, k;
