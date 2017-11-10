@@ -51,11 +51,11 @@ class TimeStepper {
         double* G;
         int i, j, k;        //used in for-loops
         
-        void singleVariableRHS( const Constants&, const DGmesh&,
+        void singleVariableRHS( const Constants&, const DGmesh&, const Variables&,
         const double[], const double[], const double[],
         double[] );
         
-        void odeFun( const Constants&, const DGmesh&,
+        void odeFun( const Constants&, const DGmesh&, const Variables&,
         const double[], const double[], const double[], const double[],
         double[], double[], double[], double[] );
 };
@@ -103,7 +103,7 @@ const int& RKSTAGES, const int& NTIMESTEPS, double& T, const double& DT ) {
     G = new double[M.N];
 }
 
-inline void TimeStepper::singleVariableRHS( const Constants& C, const DGmesh& M,
+inline void TimeStepper::singleVariableRHS( const Constants& C, const DGmesh& M, const Variables& V,
 const double rho[], const double rhoU[], const double rhoW[],
 double rhoPrime[] ) {
     //Sets rhoPrime equal to -d(rhoU)/dx - d(rhoW)/dz, using DG for d/dx and FD2 for d/dz.
@@ -140,26 +140,32 @@ double rhoPrime[] ) {
                 rhoPrime[k*M.n+(M.np*i+j)] = rhoPrime[k*M.n+(M.np*i+j)] / M.weights[M.np*i+j];
             }
         }
-        //vertical operations using FD2:
+        //vertical operations using FD:
         if( k == 0 ) {
             for( i = 0; i < M.n; i++ ) { //reflect over bottom boundary since w=0 there:
-                rhoPrime[k*M.n+i] = rhoPrime[k*M.n+i] - ( 2 * rhoW[(k+1)*M.n+i] ) / (2*M.dz);
+                rhoPrime[k*M.n+i] = rhoPrime[k*M.n+i] - ( 2 * rhoW[(k+1)*M.n+i] ) / (2*M.dz)
+                + std::abs( V.rhoW[k*M.n+i] / V.rho[k*M.n+i] ) * M.dz/2.
+                * ( - 2.*rho[k*M.n+i] ) / pow(M.dz,2.);
             }
         }
         else if( k == M.nLev-1 ) { //reflect over top boundary since w=0 there:
             for( i = 0; i < M.n; i++ ) {
-                rhoPrime[k*M.n+i] = rhoPrime[k*M.n+i] - ( -2 * rhoW[(k-1)*M.n+i] ) / (2*M.dz);
+                rhoPrime[k*M.n+i] = rhoPrime[k*M.n+i] - ( -2 * rhoW[(k-1)*M.n+i] ) / (2*M.dz)
+                + std::abs( V.rhoW[k*M.n+i] / V.rho[k*M.n+i] ) * M.dz/2.
+                * ( - 2.*rho[k*M.n+i] ) / pow(M.dz,2.);
             }
         }
         else {
             for( i = 0; i < M.n; i++ ) {
-                rhoPrime[k*M.n+i] = rhoPrime[k*M.n+i] - ( rhoW[(k+1)*M.n+i] - rhoW[(k-1)*M.n+i] ) / (2*M.dz);
+                rhoPrime[k*M.n+i] = rhoPrime[k*M.n+i] - ( rhoW[(k+1)*M.n+i] - rhoW[(k-1)*M.n+i] ) / (2*M.dz)
+                + std::abs( V.rhoW[k*M.n+i] / V.rho[k*M.n+i] ) * M.dz/2.
+                * ( rho[(k-1)*M.n+i] - 2.*rho[k*M.n+i] + rho[(k+1)*M.n+i] ) / pow(M.dz,2.);
             }
         }
     }
 }
 
-inline void TimeStepper::odeFun( const Constants& C, const DGmesh& M,
+inline void TimeStepper::odeFun( const Constants& C, const DGmesh& M, const Variables& V,
 const double rho[], const double rhoU[], const double rhoW[], const double rhoTh[],
 double rhoPrime[], double rhoUprime[], double rhoWprime[], double rhoThPrime[] ) {
     alphaMax = 0.;
@@ -169,18 +175,18 @@ double rhoPrime[], double rhoUprime[], double rhoWprime[], double rhoThPrime[] )
         P[i] = C.Po * pow( C.Rd * rhoTh[i] / C.Po, C.Cp / C.Cv );
     }
     //rho:
-    singleVariableRHS( C, M, rho, rhoU, rhoW, rhoPrime );
+    singleVariableRHS( C, M, V, rho, rhoU, rhoW, rhoPrime );
     //rhoU:
     for( i = 0; i < M.N; i++ ) {
         F[i] = rhoU[i] * rhoU[i] / rho[i] + P[i];
         G[i] = rhoU[i] * rhoW[i] / rho[i];
     }
-    singleVariableRHS( C, M, rhoU, F, G, rhoUprime );
+    singleVariableRHS( C, M, V, rhoU, F, G, rhoUprime );
     //rhoW:
     for( i = 0; i < M.N; i++ ) {
         F[i] = rhoW[i] * rhoW[i] / rho[i];
     }
-    singleVariableRHS( C, M, rhoW, G, F, rhoWprime );
+    singleVariableRHS( C, M, V, rhoW, G, F, rhoWprime );
     for( k = 0; k < M.nLev; k++ ) { //adding missing terms ( - dP/dz - rho*g ):
         if( k == 0 ) { //lowest layer (extrapolate rho and enforce dP/dz = -rho*g):
             for( i = 0; i < M.n; i++ ) {
@@ -208,14 +214,14 @@ double rhoPrime[], double rhoUprime[], double rhoWprime[], double rhoThPrime[] )
         F[i] = rhoU[i] * rhoTh[i] / rho[i];
         G[i] = rhoW[i] * rhoTh[i] / rho[i];
     }
-    singleVariableRHS( C, M, rhoTh, F, G, rhoThPrime );
+    singleVariableRHS( C, M, V, rhoTh, F, G, rhoThPrime );
 }
 
 inline void TimeStepper::rk( const Constants& C, const DGmesh& M, Variables& V ) {
     if( rkStages == 2 ) {
         //2-stage, 2nd order RK.  The outputs are t and rho.  t increments and rho gets updated.
         //stage 1:
-        odeFun( C, M, V.rho, V.rhoU, V.rhoW, V.rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
+        odeFun( C, M, V, V.rho, V.rhoU, V.rhoW, V.rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //stage 2:
         t = t + dt/2.;
         for( j = 0; j < M.nLev; j++ ) {
@@ -226,7 +232,7 @@ inline void TimeStepper::rk( const Constants& C, const DGmesh& M, Variables& V )
                 tmp_rhoTh[j*M.n+i] = V.rhoTh[j*M.n+i] + dt/2. * s1_rhoTh[j*M.n+i];
             }
         }
-        odeFun( C, M, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
+        odeFun( C, M, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //update t and get new value of rho:
         t = t + dt/2.;
         for( i = 0; i < M.N; i++ ) {
@@ -240,7 +246,7 @@ inline void TimeStepper::rk( const Constants& C, const DGmesh& M, Variables& V )
     else if( rkStages == 3 ) {
         //3-stage, 3rd order RK.  The outputs are t and rho.  t increments and rho gets updated.
         //stage 1:
-        odeFun( C, M, V.rho, V.rhoU, V.rhoW, V.rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
+        odeFun( C, M, V, V.rho, V.rhoU, V.rhoW, V.rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //stage 2:
         t = t + dt/3.;
         for( j = 0; j < M.nLev; j++ ) {
@@ -251,7 +257,7 @@ inline void TimeStepper::rk( const Constants& C, const DGmesh& M, Variables& V )
                 tmp_rhoTh[j*M.n+i] = V.rhoTh[j*M.n+i] + dt/3. * s1_rhoTh[j*M.n+i];
             }
         }
-        odeFun( C, M, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s2_rho, s2_rhoU, s2_rhoW, s2_rhoTh );
+        odeFun( C, M, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s2_rho, s2_rhoU, s2_rhoW, s2_rhoTh );
         //stage 3:
         t = t + dt/3.;
         for( j = 0; j < M.nLev; j++ ) {
@@ -262,7 +268,7 @@ inline void TimeStepper::rk( const Constants& C, const DGmesh& M, Variables& V )
                 tmp_rhoTh[j*M.n+i] = V.rhoTh[j*M.n+i] + 2*dt/3. * s2_rhoTh[j*M.n+i];
             }
         }
-        odeFun( C, M, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s2_rho, s2_rhoU, s2_rhoW, s2_rhoTh );
+        odeFun( C, M, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s2_rho, s2_rhoU, s2_rhoW, s2_rhoTh );
         //update t and get new value of rho:
         t = t + dt/3.;
         for( i = 0; i < M.N; i++ ) {
@@ -276,7 +282,7 @@ inline void TimeStepper::rk( const Constants& C, const DGmesh& M, Variables& V )
     else if( rkStages == 4 ) {
         //4-stage, 4th order RK.  The outputs are t and rho.  t increments and rho gets updated.
         //stage 1:
-        odeFun( C, M, V.rho, V.rhoU, V.rhoW, V.rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
+        odeFun( C, M, V, V.rho, V.rhoU, V.rhoW, V.rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //stage 2:
         t = t + dt/2.;
         for( j = 0; j < M.nLev; j++ ) {
@@ -287,7 +293,7 @@ inline void TimeStepper::rk( const Constants& C, const DGmesh& M, Variables& V )
                 tmp_rhoTh[j*M.n+i] = V.rhoTh[j*M.n+i] + dt/2. * s1_rhoTh[j*M.n+i];
             }
         }
-        odeFun( C, M, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s2_rho, s2_rhoU, s2_rhoW, s2_rhoTh );
+        odeFun( C, M, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s2_rho, s2_rhoU, s2_rhoW, s2_rhoTh );
         //stage 3:
         for( i = 0; i < M.N; i++ ) {
             tmp_rho[i]   = V.rho[i]   + dt/2. * s2_rho[i];
@@ -295,7 +301,7 @@ inline void TimeStepper::rk( const Constants& C, const DGmesh& M, Variables& V )
             tmp_rhoW[i]  = V.rhoW[i]  + dt/2. * s2_rhoW[i];
             tmp_rhoTh[i] = V.rhoTh[i] + dt/2. * s2_rhoTh[i];
         }
-        odeFun( C, M, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s3_rho, s3_rhoU, s3_rhoW, s3_rhoTh );
+        odeFun( C, M, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s3_rho, s3_rhoU, s3_rhoW, s3_rhoTh );
         //stage 4:
         t = t + dt/2;
         for( j = 0; j < M.nLev; j++ ) {
@@ -306,7 +312,7 @@ inline void TimeStepper::rk( const Constants& C, const DGmesh& M, Variables& V )
                 tmp_rhoTh[j*M.n+i] = V.rhoTh[j*M.n+i] + dt * s3_rhoTh[j*M.n+i];
             }
         }
-        odeFun( C, M, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s4_rho, s4_rhoU, s4_rhoW, s4_rhoTh );
+        odeFun( C, M, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s4_rho, s4_rhoU, s4_rhoW, s4_rhoTh );
         //get new value:
         for( i = 0; i < M.N; i++ ) {
             V.rho[i]   = V.rho[i]   + dt/6. * ( s1_rho[i]   + 2*s2_rho[i]   + 2*s3_rho[i]   + s4_rho[i] );

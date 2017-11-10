@@ -11,8 +11,17 @@
 #include "TimeStepper.hpp"
 
 //Numerical solution for the 2D nonhydrostatic governing equations using
-//discontinuous Galerkin laterally and second order finite differences vertically.
+//discontinuous Galerkin laterally and finite differences vertically.
 //Currently all variables are collocated at layer midpoints.
+
+//These are the equations being solved:
+//  (1) d(rho)/dt    = -d(rho*u)/dx - d(rho*w)/dz,
+//  (2) d(rho*u)/dt  = -d(rho*u*u+P)/dx - d(rho*u*w)/dz,
+//  (3) d(rho*w)/dt  = -d(rho*w*u)/dx - d(rho*w*w+P)/dz - rho*g,
+//  (4) d(rho*th)/dt = -d(rho*th*u)/dx - d(rho*th*w)/dz,
+//  (5) P = Po*(rho*Rd*th/Po)^(Cp/Cv),
+//with Po=10^5, Rd=287.04, Cp=1005, Cv=Cp-Rd, g=9.81.
+//w=0 ( => dP/dz=-rho*g ) is enforced on the top and bottom boundaries.
 
 //Instructions:
 // (*) mkdir rho rhoU rhoW rhoTh
@@ -28,12 +37,13 @@ int main()
     const double c = 0.;                          //bottom endpoint
     const double d = 10000.;                      //top endpoint
     const int np = 4;                             //number of polynomials per element (2, 3, or 4)
-    const int ne = 20;                            //number of elements per level (layer)
-    const int nLev = 80;                          //number of levels (layers)
+    const int ne = 25;                            //number of elements per level (layer)
+    const int nLev = 100;                         //number of levels (layers)
     const int rkStages = 4;                       //number of Runge-Kutta stages (2, 3, or 4)
-    const int nTimesteps = 10000;                 //number of timesteps
     double t = 0.;                                //start time
-    const double dt = 1./4.;                     //time increment
+    const double dt = 1./4.;                      //time increment
+    const int nTimesteps = 6000;                 //number of timesteps
+    const int saveDelta = 40;                     //number of time steps between saves
     
     int i, j, k;
     
@@ -82,6 +92,11 @@ int main()
     outFile << nTimesteps;
     outFile.close();
     
+    //save number of timesteps between saves:
+    outFile.open( "saveDelta.txt" );
+    outFile << saveDelta;
+    outFile.close();
+    
     //save array of x-coordinates:
     outFile.open( "x.txt" );
     for( i = 0; i < M.n; i++ ) {
@@ -111,41 +126,42 @@ int main()
     
     for( j = 0; j < nTimesteps+1; j++ ) {
         
-        //save rho:
-        std::stringstream s_rho;
-        s_rho << "./rho/" << std::setfill('0') << std::setw(6) << j << ".txt";
-        outFile.open( s_rho.str() );
-        for( i = 0; i < M.N; i++ ) {
-            outFile << V.rho[i] << " ";
-        }
-        outFile.close();
-        //save rhoU:
-        std::stringstream s_rhoU;
-        s_rhoU << "./rhoU/" << std::setfill('0') << std::setw(6) << j << ".txt";
-        outFile.open( s_rhoU.str() );
-        for( i = 0; i < M.N; i++ ) {
-            outFile << V.rhoU[i] << " ";
-        }
-        outFile.close();
-        //save rhoW:
-        std::stringstream s_rhoW;
-        s_rhoW << "./rhoW/" << std::setfill('0') << std::setw(6) << j << ".txt";
-        outFile.open( s_rhoW.str() );
-        for( i = 0; i < M.N; i++ ) {
-            outFile << V.rhoW[i] << " ";
-        }
-        outFile.close();
-        //save rhoTh:
-        std::stringstream s_rhoTh;
-        s_rhoTh << "./rhoTh/" << std::setfill('0') << std::setw(6) << j << ".txt";
-        outFile.open( s_rhoTh.str() );
-        for( i = 0; i < M.N; i++ ) {
-            outFile << V.rhoTh[i] << " ";
-        }
-        outFile.close();
+        if( j%saveDelta == 0 ) {
         
-        //print information periodically:
-        if( j%40 == 0 ) {
+            //save rho:
+            std::stringstream s_rho;
+            s_rho << "./rho/" << std::setfill('0') << std::setw(6) << j << ".txt";
+            outFile.open( s_rho.str() );
+            for( i = 0; i < M.N; i++ ) {
+                outFile << V.rho[i] << " ";
+            }
+            outFile.close();
+            //save rhoU:
+            std::stringstream s_rhoU;
+            s_rhoU << "./rhoU/" << std::setfill('0') << std::setw(6) << j << ".txt";
+            outFile.open( s_rhoU.str() );
+            for( i = 0; i < M.N; i++ ) {
+                outFile << V.rhoU[i] << " ";
+            }
+            outFile.close();
+            //save rhoW:
+            std::stringstream s_rhoW;
+            s_rhoW << "./rhoW/" << std::setfill('0') << std::setw(6) << j << ".txt";
+            outFile.open( s_rhoW.str() );
+            for( i = 0; i < M.N; i++ ) {
+                outFile << V.rhoW[i] << " ";
+            }
+            outFile.close();
+            //save rhoTh:
+            std::stringstream s_rhoTh;
+            s_rhoTh << "./rhoTh/" << std::setfill('0') << std::setw(6) << j << ".txt";
+            outFile.open( s_rhoTh.str() );
+            for( i = 0; i < M.N; i++ ) {
+                outFile << V.rhoTh[i] << " ";
+            }
+            outFile.close();
+        
+            //print information:
             std::cout << "t = " << T.t << std::endl;
             pipMin = pow( V.P[0]/C.Po, C.Rd/C.Cp ) - V.piBar[0];
             pipMax = pow( V.P[0]/C.Po, C.Rd/C.Cp ) - V.piBar[0];

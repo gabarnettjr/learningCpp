@@ -4,9 +4,9 @@
 struct Constants {
     
     double Po = 100000.;
-    double Cp = 1004.;
-    double Cv = 717.;
-    double Rd = Cp - Cv;
+    double Rd = 287.04;
+    double Cp = 1005.;
+    double Cv = Cp - Rd;
     double g = 9.81;
     
 };
