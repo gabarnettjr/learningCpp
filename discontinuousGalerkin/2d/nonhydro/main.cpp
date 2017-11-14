@@ -37,21 +37,21 @@ int main()
     const double c = 0.;                          //bottom endpoint
     const double d = 10000.;                      //top endpoint
     const int np = 4;                             //number of polynomials per element (2, 3, or 4)
-    const int ne = 25;                            //number of elements per level (layer)
-    const int nLev = 100;                         //number of levels (layers)
+    const int ne = 50;                            //number of elements per level (layer)
+    const int nLev = 200;                         //number of levels (layers)
     const int rkStages = 4;                       //number of Runge-Kutta stages (2, 3, or 4)
     double t = 0.;                                //start time
-    const double dt = 1./4.;                      //time increment
-    const int nTimesteps = 6000;                  //number of timesteps
-    const int saveDelta = 40;                     //number of time steps between saves
+    const double dt = 1./8.;                      //time increment
+    const int nTimesteps = 12000;                  //number of timesteps
+    const int saveDelta = 80;                     //number of time steps between saves
     
     int i, j, k;
     
     //physical constants:
-    Constants C;
+    const Constants C;
     
     //Initialize mesh:
-    DGmesh M( a, b, c, d, np, ne, nLev );
+    const DGmesh M( a, b, c, d, np, ne, nLev );
     
     //set up the prognostic and diagnostic variables:
     Variables V( C, M );
@@ -111,12 +111,58 @@ int main()
     }
     outFile.close();
     
+    //save background density:
+    outFile.open( "rhoBar.txt" );
+    for( i = 0; i < M.N; i++ ) {
+        outFile << V.rhoBar[i] << " ";
+    }
+    outFile.close();
+    
+    //save background potential temperature"
+    outFile.open( "thetaBar.txt" );
+    for( i = 0; i < M.N; i++ ) {
+        outFile << V.thetaBar[i] << " ";
+    }
+    outFile.close();
+    
+    //save background Exner pressure:
+    outFile.open( "piBar.txt" );
+    for( i = 0; i < M.N; i++ ) {
+        outFile << V.piBar[i] << " ";
+    }
+    outFile.close();
+    
+    //save background pressure:
+    outFile.open( "Pbar.txt" );
+    for( i = 0; i < M.N; i++ ) {
+        outFile << V.Pbar[i] << " ";
+    }
+    outFile.close();
+    
+    //save constants:
+    outFile.open( "Rd.txt" );
+    outFile << C.Rd;
+    outFile.close();
+    outFile.open( "Po.txt" );
+    outFile << C.Po;
+    outFile.close();
+    outFile.open( "Cp.txt" );
+    outFile << C.Cp;
+    outFile.close();
+    outFile.open( "Cv.txt" );
+    outFile << C.Cv;
+    outFile.close();
+    
     ///////////////////////////////////////////////////////////////////////
     
     //Time stepping:
     
-    double pipMin;
-    double pipMax;
+    // double rhoMin;
+    // double rhoMax;
+    double Pmin;
+    double Pmax;
+    // double pipMin;
+    // double pipMax;
     double thpMin;
     double thpMax;
     double uMin;
@@ -161,10 +207,14 @@ int main()
             }
             outFile.close();
         
-            //print information:
+            //print min and max:
             std::cout << "t = " << T.t << std::endl;
-            pipMin = pow( V.P[0]/C.Po, C.Rd/C.Cp ) - V.piBar[0];
-            pipMax = pow( V.P[0]/C.Po, C.Rd/C.Cp ) - V.piBar[0];
+            // pipMin = pow( V.P[0]/C.Po, C.Rd/C.Cp ) - V.piBar[0];
+            // pipMax = pow( V.P[0]/C.Po, C.Rd/C.Cp ) - V.piBar[0];
+            Pmin = V.P[0] - V.Pbar[0];
+            Pmax = V.P[0] - V.Pbar[0];
+            // rhoMin = V.rho[0] - V.rhoBar[0];
+            // rhoMax = V.rho[0] - V.rhoBar[0];
             thpMin = V.rhoTh[0] / V.rho[0] - V.thetaBar[0];
             thpMax = V.rhoTh[0] / V.rho[0] - V.thetaBar[0];
             uMin = V.rhoU[0] / V.rho[0];
@@ -172,12 +222,24 @@ int main()
             wMin = V.rhoW[0] / V.rho[0];
             wMax = V.rhoW[0] / V.rho[0];
             for( k = 1; k < M.N; k++ ) {
-                if( pow(V.P[k]/C.Po,C.Rd/C.Cp)-V.piBar[k] < pipMin ) {
-                    pipMin = pow(V.P[k]/C.Po,C.Rd/C.Cp)-V.piBar[k];
+                // if( pow(V.P[k]/C.Po,C.Rd/C.Cp)-V.piBar[k] < pipMin ) {
+                    // pipMin = pow(V.P[k]/C.Po,C.Rd/C.Cp)-V.piBar[k];
+                // }
+                // if( pow(V.P[k]/C.Po,C.Rd/C.Cp)-V.piBar[k] > pipMax ) {
+                    // pipMax = pow(V.P[k]/C.Po,C.Rd/C.Cp)-V.piBar[k];
+                // }
+                if( V.P[k]-V.Pbar[k] < Pmin ) {
+                    Pmin = V.P[k]-V.Pbar[k];
                 }
-                if( pow(V.P[k]/C.Po,C.Rd/C.Cp)-V.piBar[k] > pipMax ) {
-                    pipMax = pow(V.P[k]/C.Po,C.Rd/C.Cp)-V.piBar[k];
+                if( V.P[k]-V.Pbar[k] > Pmax ) {
+                    Pmax = V.P[k]-V.Pbar[k];
                 }
+                // if( V.rho[k]-V.rhoBar[k] < rhoMin ) {
+                    // rhoMin = V.rho[k]-V.rhoBar[k];
+                // }
+                // if( V.rho[k]-V.rhoBar[k] > rhoMax ) {
+                    // rhoMax = V.rho[k]-V.rhoBar[k];
+                // }
                 if( V.rhoTh[k]/V.rho[k]-V.thetaBar[k] < thpMin ) {
                     thpMin = V.rhoTh[k]/V.rho[k]-V.thetaBar[k];
                 }
@@ -197,8 +259,12 @@ int main()
                     wMax = V.rhoW[k]/V.rho[k];
                 }
             }
-            std::cout << "minPip = " << pipMin << std::endl;
-            std::cout << "maxPip = " << pipMax << std::endl;
+            // std::cout << "minPip = " << pipMin << std::endl;
+            // std::cout << "maxPip = " << pipMax << std::endl;
+            std::cout << "minP = " << Pmin << std::endl;
+            std::cout << "maxP = " << Pmax << std::endl;
+            // std::cout << "minRho = " << rhoMin << std::endl;
+            // std::cout << "maxRho = " << rhoMax << std::endl;
             std::cout << "minThp = " << thpMin << std::endl;
             std::cout << "maxThp = " << thpMax << std::endl;
             std::cout << "minU = " << uMin << std::endl;

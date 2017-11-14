@@ -143,16 +143,16 @@ double rhoPrime[] ) {
         //vertical operations using FD:
         if( k == 0 ) {
             for( i = 0; i < M.n; i++ ) { //reflect over bottom boundary since w=0 there:
-                rhoPrime[k*M.n+i] = rhoPrime[k*M.n+i] - ( 2 * rhoW[(k+1)*M.n+i] ) / (2*M.dz)
-                + std::abs( V.rhoW[k*M.n+i] / V.rho[k*M.n+i] ) * M.dz/2.
-                * ( - 2.*rho[k*M.n+i] ) / pow(M.dz,2.);
+                rhoPrime[k*M.n+i] = rhoPrime[k*M.n+i] - ( rhoW[(k+1)*M.n+i] - -rhoW[k*M.n+i] ) / (2*M.dz);
+                // + std::abs( V.rhoW[k*M.n+i] / V.rho[k*M.n+i] ) * M.dz/2.
+                // * ( -rho[k*M.n+i] - 2.*rho[k*M.n+i] + rho[(k+1)*M.n+i] ) / pow(M.dz,2.);
             }
         }
         else if( k == M.nLev-1 ) { //reflect over top boundary since w=0 there:
             for( i = 0; i < M.n; i++ ) {
-                rhoPrime[k*M.n+i] = rhoPrime[k*M.n+i] - ( -2 * rhoW[(k-1)*M.n+i] ) / (2*M.dz)
-                + std::abs( V.rhoW[k*M.n+i] / V.rho[k*M.n+i] ) * M.dz/2.
-                * ( - 2.*rho[k*M.n+i] ) / pow(M.dz,2.);
+                rhoPrime[k*M.n+i] = rhoPrime[k*M.n+i] - ( -rhoW[k*M.n+i] - rhoW[(k-1)*M.n+i] ) / (2*M.dz);
+                // + std::abs( V.rhoW[k*M.n+i] / V.rho[k*M.n+i] ) * M.dz/2.
+                // * ( rho[] - 2.*rho[k*M.n+i] + rho[] ) / pow(M.dz,2.);
             }
         }
         else {
@@ -190,21 +190,21 @@ double rhoPrime[], double rhoUprime[], double rhoWprime[], double rhoThPrime[] )
     for( k = 0; k < M.nLev; k++ ) { //adding missing terms ( - dP/dz - rho*g ):
         if( k == 0 ) { //lowest layer (extrapolate rho and enforce dP/dz = -rho*g):
             for( i = 0; i < M.n; i++ ) {
-                tmpD = P[k*M.n+i] + C.g*M.dz/2 * ( 3*rho[k*M.n+i] - rho[(k+1)*M.n+i] );
-                rhoWprime[k*M.n+i] = rhoWprime[k*M.n+i] - ( P[(k+1)*M.n+i] - tmpD ) / (2*M.dz)
+                tmpD = P[k*M.n+i] + C.g*M.dz * ( 3.*rho[k*M.n+i] - rho[(k+1)*M.n+i] ) / 2.;
+                rhoWprime[k*M.n+i] = rhoWprime[k*M.n+i] - ( P[(k+1)*M.n+i] - tmpD ) / (2.*M.dz)
                 - rho[k*M.n+i] * C.g;
             }
         }
         else if( k == M.nLev-1 ) { //highest layer (extrapolate rho and enforce dP/dz = -rho*g):
             for( i = 0; i < M.n; i++ ) {
-                tmpD = P[k*M.n+i] - C.g*M.dz/2 * ( 3*rho[k*M.n+i] - rho[(k-1)*M.n+i] );
-                rhoWprime[k*M.n+i] = rhoWprime[k*M.n+i] - ( tmpD - P[(k-1)*M.n+i] ) / (2*M.dz)
+                tmpD = P[k*M.n+i] - C.g*M.dz * ( 3.*rho[k*M.n+i] - rho[(k-1)*M.n+i] ) / 2.;
+                rhoWprime[k*M.n+i] = rhoWprime[k*M.n+i] - ( tmpD - P[(k-1)*M.n+i] ) / (2.*M.dz)
                 - rho[k*M.n+i] * C.g;
             }
         }
         else { //all other layers:
             for( i = 0; i < M.n; i++ ) {
-                rhoWprime[k*M.n+i] = rhoWprime[k*M.n+i] - ( P[(k+1)*M.n+i] - P[(k-1)*M.n+i] ) / (2*M.dz)
+                rhoWprime[k*M.n+i] = rhoWprime[k*M.n+i] - ( P[(k+1)*M.n+i] - P[(k-1)*M.n+i] ) / (2.*M.dz)
                 - rho[k*M.n+i] * C.g;
             }
         }
@@ -224,13 +224,11 @@ inline void TimeStepper::rk( const Constants& C, const DGmesh& M, Variables& V )
         odeFun( C, M, V, V.rho, V.rhoU, V.rhoW, V.rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //stage 2:
         t = t + dt/2.;
-        for( j = 0; j < M.nLev; j++ ) {
-            for( i = 0; i < M.n; i++ ) {
-                tmp_rho[j*M.n+i]   = V.rho[j*M.n+i]   + dt/2. * s1_rho[j*M.n+i];
-                tmp_rhoU[j*M.n+i]  = V.rhoU[j*M.n+i]  + dt/2. * s1_rhoU[j*M.n+i];
-                tmp_rhoW[j*M.n+i]  = V.rhoW[j*M.n+i]  + dt/2. * s1_rhoW[j*M.n+i];
-                tmp_rhoTh[j*M.n+i] = V.rhoTh[j*M.n+i] + dt/2. * s1_rhoTh[j*M.n+i];
-            }
+        for( i = 0; i < M.N; i++ ) {
+            tmp_rho[i]   = V.rho[i]   + dt/2. * s1_rho[i];
+            tmp_rhoU[i]  = V.rhoU[i]  + dt/2. * s1_rhoU[i];
+            tmp_rhoW[i]  = V.rhoW[i]  + dt/2. * s1_rhoW[i];
+            tmp_rhoTh[i] = V.rhoTh[i] + dt/2. * s1_rhoTh[i];
         }
         odeFun( C, M, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //update t and get new value of rho:
@@ -249,24 +247,20 @@ inline void TimeStepper::rk( const Constants& C, const DGmesh& M, Variables& V )
         odeFun( C, M, V, V.rho, V.rhoU, V.rhoW, V.rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //stage 2:
         t = t + dt/3.;
-        for( j = 0; j < M.nLev; j++ ) {
-            for( i = 0; i < M.n; i++ ) {
-                tmp_rho[j*M.n+i]   = V.rho[j*M.n+i]   + dt/3. * s1_rho[j*M.n+i];
-                tmp_rhoU[j*M.n+i]  = V.rhoU[j*M.n+i]  + dt/3. * s1_rhoU[j*M.n+i];
-                tmp_rhoW[j*M.n+i]  = V.rhoW[j*M.n+i]  + dt/3. * s1_rhoW[j*M.n+i];
-                tmp_rhoTh[j*M.n+i] = V.rhoTh[j*M.n+i] + dt/3. * s1_rhoTh[j*M.n+i];
-            }
+        for( i = 0; i < M.N; i++ ) {
+            tmp_rho[i]   = V.rho[i]   + dt/3. * s1_rho[i];
+            tmp_rhoU[i]  = V.rhoU[i]  + dt/3. * s1_rhoU[i];
+            tmp_rhoW[i]  = V.rhoW[i]  + dt/3. * s1_rhoW[i];
+            tmp_rhoTh[i] = V.rhoTh[i] + dt/3. * s1_rhoTh[i];
         }
         odeFun( C, M, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s2_rho, s2_rhoU, s2_rhoW, s2_rhoTh );
         //stage 3:
         t = t + dt/3.;
-        for( j = 0; j < M.nLev; j++ ) {
-            for( i = 0; i < M.n; i++ ) {
-                tmp_rho[j*M.n+i]   = V.rho[j*M.n+i]   + 2*dt/3. * s2_rho[j*M.n+i];
-                tmp_rhoU[j*M.n+i]  = V.rhoU[j*M.n+i]  + 2*dt/3. * s2_rhoU[j*M.n+i];
-                tmp_rhoW[j*M.n+i]  = V.rhoW[j*M.n+i]  + 2*dt/3. * s2_rhoW[j*M.n+i];
-                tmp_rhoTh[j*M.n+i] = V.rhoTh[j*M.n+i] + 2*dt/3. * s2_rhoTh[j*M.n+i];
-            }
+        for( i = 0; i < M.N; i++ ) {
+            tmp_rho[i]   = V.rho[i]   + 2*dt/3. * s2_rho[i];
+            tmp_rhoU[i]  = V.rhoU[i]  + 2*dt/3. * s2_rhoU[i];
+            tmp_rhoW[i]  = V.rhoW[i]  + 2*dt/3. * s2_rhoW[i];
+            tmp_rhoTh[i] = V.rhoTh[i] + 2*dt/3. * s2_rhoTh[i];
         }
         odeFun( C, M, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s2_rho, s2_rhoU, s2_rhoW, s2_rhoTh );
         //update t and get new value of rho:
@@ -285,13 +279,11 @@ inline void TimeStepper::rk( const Constants& C, const DGmesh& M, Variables& V )
         odeFun( C, M, V, V.rho, V.rhoU, V.rhoW, V.rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //stage 2:
         t = t + dt/2.;
-        for( j = 0; j < M.nLev; j++ ) {
-            for( i = 0; i < M.n; i++ ) {
-                tmp_rho[j*M.n+i]   = V.rho[j*M.n+i]   + dt/2. * s1_rho[j*M.n+i];
-                tmp_rhoU[j*M.n+i]  = V.rhoU[j*M.n+i]  + dt/2. * s1_rhoU[j*M.n+i];
-                tmp_rhoW[j*M.n+i]  = V.rhoW[j*M.n+i]  + dt/2. * s1_rhoW[j*M.n+i];
-                tmp_rhoTh[j*M.n+i] = V.rhoTh[j*M.n+i] + dt/2. * s1_rhoTh[j*M.n+i];
-            }
+        for( i = 0; i < M.N; i++ ) {
+            tmp_rho[i]   = V.rho[i]   + dt/2. * s1_rho[i];
+            tmp_rhoU[i]  = V.rhoU[i]  + dt/2. * s1_rhoU[i];
+            tmp_rhoW[i]  = V.rhoW[i]  + dt/2. * s1_rhoW[i];
+            tmp_rhoTh[i] = V.rhoTh[i] + dt/2. * s1_rhoTh[i];
         }
         odeFun( C, M, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s2_rho, s2_rhoU, s2_rhoW, s2_rhoTh );
         //stage 3:
@@ -304,13 +296,11 @@ inline void TimeStepper::rk( const Constants& C, const DGmesh& M, Variables& V )
         odeFun( C, M, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s3_rho, s3_rhoU, s3_rhoW, s3_rhoTh );
         //stage 4:
         t = t + dt/2;
-        for( j = 0; j < M.nLev; j++ ) {
-            for( i = 0; i < M.n; i++ ) {
-                tmp_rho[j*M.n+i]   = V.rho[j*M.n+i]   + dt * s3_rho[j*M.n+i];
-                tmp_rhoU[j*M.n+i]  = V.rhoU[j*M.n+i]  + dt * s3_rhoU[j*M.n+i];
-                tmp_rhoW[j*M.n+i]  = V.rhoW[j*M.n+i]  + dt * s3_rhoW[j*M.n+i];
-                tmp_rhoTh[j*M.n+i] = V.rhoTh[j*M.n+i] + dt * s3_rhoTh[j*M.n+i];
-            }
+        for( i = 0; i < M.N; i++ ) {
+            tmp_rho[i]   = V.rho[i]   + dt * s3_rho[i];
+            tmp_rhoU[i]  = V.rhoU[i]  + dt * s3_rhoU[i];
+            tmp_rhoW[i]  = V.rhoW[i]  + dt * s3_rhoW[i];
+            tmp_rhoTh[i] = V.rhoTh[i] + dt * s3_rhoTh[i];
         }
         odeFun( C, M, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s4_rho, s4_rhoU, s4_rhoW, s4_rhoTh );
         //get new value:

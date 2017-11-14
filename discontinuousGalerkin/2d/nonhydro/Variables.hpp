@@ -18,8 +18,10 @@ class Variables {
         double* rhoTh;
         double* P;
         
+        double* rhoBar;
         double* thetaBar;
         double* piBar;
+        double* Pbar;
         
     private:
         
@@ -27,6 +29,8 @@ class Variables {
         double* th;
          
         void risingBubble( const Constants&, const DGmesh& );
+        void densityCurrent( const Constants&, const DGmesh& );
+        void inertiaGravityWaves( const Constants&, const DGmesh& );
 };
 
 Variables::Variables( const Constants& C, const DGmesh& M ) {
@@ -35,8 +39,10 @@ Variables::Variables( const Constants& C, const DGmesh& M ) {
     rhoW     = new double[M.N];
     rhoTh    = new double[M.N];
     P        = new double[M.N];
+    rhoBar   = new double[M.N];
     thetaBar = new double[M.N];
     piBar    = new double[M.N];
+    Pbar     = new double[M.N];
     pi       = new double[M.N];
     th       = new double[M.N];
     
@@ -56,19 +62,27 @@ inline void Variables::risingBubble( const Constants& C, const DGmesh& M ) {
             piBar[i*M.n+j] = 1. - C.g / C.Cp / thetaBar[i*M.n+j] * M.z[i];
             r = sqrt( pow(M.x[j]-xc,2.) + pow(M.z[i]-zc,2.) );
             thetaPrime0 = 2. * exp(-pow(k*r,2.));
-            pi[i*M.n+j] = piBar[i*M.n+j];
             th[i*M.n+j] = thetaBar[i*M.n+j] + thetaPrime0;
         }
     }
     for( int i = 0; i < M.N; i++ ) {
+        pi[i] = piBar[i];
+        rhoBar[i] = C.Po * pow( piBar[i], C.Cv/C.Rd ) / C.Rd / thetaBar[i];
+        Pbar[i] = C.Po * pow( C.Rd * rhoBar[i] * thetaBar[i] / C.Po, C.Cp/C.Cv );
         rho[i] = C.Po * pow( pi[i], C.Cv / C.Rd ) / C.Rd / th[i];
         rhoTh[i] = rho[i] * th[i];
         P[i] = C.Po * pow( C.Rd*rhoTh[i]/C.Po, C.Cp/C.Cv );
-    }
-    for( int i = 0; i < M.N; i++ ) {
         rhoU[i] = 0.;
         rhoW[i] = 0.;
     }
+}
+
+inline void Variables::densityCurrent( const Constants& C, const DGmesh& M ) {
+    
+}
+
+inline void Variables::inertiaGravityWaves( const Constants& C, const DGmesh& M ) {
+    
 }
 
 #endif
