@@ -36,12 +36,12 @@ int main()
     const double b = 10000.;                      //right endpoint
     const double c = 0.;                          //bottom endpoint
     const double d = 10000.;                      //top endpoint
-    const int n = 100;                             //degrees of freedom (nodes) per level
+    const int n = 100;                            //degrees of freedom (nodes) per level
     const int nLev = 100;                         //number of levels (layers)
     const int rkStages = 4;                       //number of Runge-Kutta stages (2, 3, or 4)
     double t = 0.;                                //start time
     const double dt = 1./8.;                      //time increment
-    const int nTimesteps = 12000;                  //number of timesteps
+    const int nTimesteps = 12000;                 //number of timesteps
     const int saveDelta = 80;                     //number of time steps between saves
     
     int i, j, k;
