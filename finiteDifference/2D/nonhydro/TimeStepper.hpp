@@ -5,14 +5,14 @@
 #include <cmath>
 
 #include "Constants.hpp"
-#include "DGmesh.hpp"
+#include "FDmesh.hpp"
 #include "Variables.hpp"
 
 class TimeStepper {
     
     public:
         
-        TimeStepper( const Constants&, const DGmesh&, Variables&,
+        TimeStepper( const Constants&, const FDmesh&, Variables&,
         const int&, const int&, double&, const double& );
         
         int rkStages;
@@ -20,7 +20,7 @@ class TimeStepper {
         double t;
         double dt;
         
-        void rk( const Constants&, const DGmesh&, Variables& );
+        void rk( const Constants&, const FDmesh&, Variables& );
         
     private:
         
@@ -45,22 +45,21 @@ class TimeStepper {
         double* tmp_rhoU;
         double* tmp_rhoW;
         double* tmp_rhoTh;
-        double alphaMax;    //Lax-Friedrichs flux parameter
         double tmpD;        //used inside odeFun
         double* F;
         double* G;
         int i, j, k;        //used in for-loops
         
-        void singleVariableRHS( const Constants&, const DGmesh&, const Variables&,
+        void singleVariableRHS( const Constants&, const FDmesh&, const Variables&,
         const double[], const double[], const double[],
         double[] );
         
-        void odeFun( const Constants&, const DGmesh&, const Variables&,
+        void odeFun( const Constants&, const FDmesh&, const Variables&,
         const double[], const double[], const double[], const double[],
         double[], double[], double[], double[] );
 };
 
-TimeStepper::TimeStepper( const Constants& C, const DGmesh& M, Variables& V,
+TimeStepper::TimeStepper( const Constants& C, const FDmesh& M, Variables& V,
 const int& RKSTAGES, const int& NTIMESTEPS, double& T, const double& DT ) {
     if( RKSTAGES == 2 || RKSTAGES == 3 || RKSTAGES == 4 ) {
         rkStages = RKSTAGES;
@@ -103,41 +102,28 @@ const int& RKSTAGES, const int& NTIMESTEPS, double& T, const double& DT ) {
     G = new double[M.N];
 }
 
-inline void TimeStepper::singleVariableRHS( const Constants& C, const DGmesh& M, const Variables& V,
+inline void TimeStepper::singleVariableRHS( const Constants& C, const FDmesh& M, const Variables& V,
 const double rho[], const double rhoU[], const double rhoW[],
 double rhoPrime[] ) {
-    //Sets rhoPrime equal to -d(rhoU)/dx - d(rhoW)/dz, using DG for d/dx and FD2 for d/dz.
+    //Sets rhoPrime equal to -d(rhoU)/dx - d(rhoW)/dz, using FD for d/dx and d/dz.
     //This is used for each of the four prognostic variables: rho, rhoU, rhoW, rhoTh.
     for( k = 0; k < M.nLev; k++ ) {
-        //lateral operations using DG:
-        for( i=0; i<M.ne; i++ ) {
-            if( M.np > 2 ) { rhoPrime[k*M.n+(M.np*i+1)] = 0; }
-            if( M.np > 3 ) { rhoPrime[k*M.n+(M.np*i+2)] = 0; }
-            if( i == 0 ) { //left-most node of left-most element (periodic BC enforcement and LFF):
-                rhoPrime[k*M.n+(M.np*i)] = ( rhoU[k*M.n+(M.n-1)] + rhoU[k*M.n+(M.np*i)] )/2.
-                - alphaMax * ( rho[k*M.n+(M.np*i)] - rho[k*M.n+(M.n-1)] );
+        //lateral operations using FD:
+        for( i=0; i<M.n; i++ ) {
+            if( i == 0 ) {
+                rhoPrime[k*M.n+i] = - ( rhoU[k*M.n+(i+1)] - rhoU[k*M.n+(M.n-1)] ) / (2*M.dx)
+                + std::abs( V.rhoU[k*M.n+i] / V.rho[k*M.n+i] ) * M.dx/2
+                * ( rho[k*M.n+(M.n-1)] - 2*rho[k*M.n+i] + rho[k*M.n+(i+1)] ) / pow(M.dx,2.);
             }
-            else { //Lax-Friedrichs Flux (LFF) for the left-most node of all other elements:
-                rhoPrime[k*M.n+(M.np*i)] = ( rhoU[k*M.n+(M.np*i-1)] + rhoU[k*M.n+(M.np*i)] )/2.
-                - alphaMax * ( rho[k*M.n+(M.np*i)] - rho[k*M.n+(M.np*i-1)] );
+            else if( i == M.n-1 ) {
+                rhoPrime[k*M.n+i] = - ( rhoU[k*M.n+0] - rhoU[k*M.n+(i-1)] ) / (2*M.dx)
+                + std::abs( V.rhoU[k*M.n+i] / V.rho[k*M.n+i] ) * M.dx/2
+                * ( rho[k*M.n+(i-1)] - 2*rho[k*M.n+i] + rho[k*M.n+0] ) / pow(M.dx,2.);
             }
-            if( i == M.ne-1 ) { //right-most node of right-most element (periodic BC enforcement and LFF):
-                rhoPrime[k*M.n+(M.np*i+M.np-1)] = -( ( rhoU[k*M.n+(M.np*i+M.np-1)] + rhoU[k*M.n+(0)] )/2.
-                - alphaMax * ( rho[k*M.n+(0)] - rho[k*M.n+(M.np*i+M.np-1)] ) );
-            }
-            else { //Lax-Friedrichs Flux (LFF) for the right-most node of all other elements:
-                rhoPrime[k*M.n+(M.np*i+M.np-1)] = -( ( rhoU[k*M.n+(M.np*i+M.np-1)] + rhoU[k*M.n+(M.np*i+M.np)] )/2.
-                - alphaMax * ( rho[k*M.n+(M.np*i+M.np)] - rho[k*M.n+(M.np*i+M.np-1)] ) );
-            }
-            for( j = 0; j < M.np; j++ ) { //the non-flux part of the RHS:
-                tmpD = M.weights[M.np*i+j] * rhoU[k*M.n+(M.np*i+j)]; 
-                rhoPrime[k*M.n+(M.np*i)]   = rhoPrime[k*M.n+(M.np*i)]   + tmpD * M.dphi0dx[M.np*i+j];
-                rhoPrime[k*M.n+(M.np*i+1)] = rhoPrime[k*M.n+(M.np*i+1)] + tmpD * M.dphi1dx[M.np*i+j];
-                if( M.np > 2 ) { rhoPrime[k*M.n+(M.np*i+2)] = rhoPrime[k*M.n+(M.np*i+2)] + tmpD * M.dphi2dx[M.np*i+j]; }
-                if( M.np > 3 ) { rhoPrime[k*M.n+(M.np*i+3)] = rhoPrime[k*M.n+(M.np*i+3)] + tmpD * M.dphi3dx[M.np*i+j]; }
-            }
-            for( j = 0; j < M.np; j++ ) {
-                rhoPrime[k*M.n+(M.np*i+j)] = rhoPrime[k*M.n+(M.np*i+j)] / M.weights[M.np*i+j];
+            else {
+                rhoPrime[k*M.n+i] = - ( rhoU[k*M.n+(i+1)] - rhoU[k*M.n+(i-1)] ) / (2*M.dx)
+                + std::abs( V.rhoU[k*M.n+i] / V.rho[k*M.n+i] ) * M.dx/2
+                * ( rho[k*M.n+(i-1)] - 2*rho[k*M.n+i] + rho[k*M.n+(i+1)] ) / pow(M.dx,2.);
             }
         }
         //vertical operations using FD:
@@ -165,13 +151,10 @@ double rhoPrime[] ) {
     }
 }
 
-inline void TimeStepper::odeFun( const Constants& C, const DGmesh& M, const Variables& V,
+inline void TimeStepper::odeFun( const Constants& C, const FDmesh& M, const Variables& V,
 const double rho[], const double rhoU[], const double rhoW[], const double rhoTh[],
 double rhoPrime[], double rhoUprime[], double rhoWprime[], double rhoThPrime[] ) {
-    alphaMax = 0.;
     for( i = 0; i < M.N; i++ ) {
-        tmpD = std::abs( rhoU[i] / rho[i] );
-        if( tmpD > alphaMax ) { alphaMax = tmpD; }
         P[i] = C.Po * pow( C.Rd * rhoTh[i] / C.Po, C.Cp / C.Cv );
     }
     //rho:
@@ -217,7 +200,7 @@ double rhoPrime[], double rhoUprime[], double rhoWprime[], double rhoThPrime[] )
     singleVariableRHS( C, M, V, rhoTh, F, G, rhoThPrime );
 }
 
-inline void TimeStepper::rk( const Constants& C, const DGmesh& M, Variables& V ) {
+inline void TimeStepper::rk( const Constants& C, const FDmesh& M, Variables& V ) {
     if( rkStages == 2 ) {
         //2-stage, 2nd order RK.  The outputs are t and rho.  t increments and rho gets updated.
         //stage 1:

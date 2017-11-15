@@ -6,7 +6,7 @@
 #include <iomanip>
 
 #include "Constants.hpp"
-#include "DGmesh.hpp"
+#include "FDmesh.hpp"
 #include "Variables.hpp"
 #include "TimeStepper.hpp"
 
@@ -25,7 +25,7 @@
 
 //Instructions:
 // (*) mkdir rho rhoU rhoW rhoTh
-// (*) g++ Constants.hpp DGmesh.hpp Variables.hpp TimeStepper.hpp main.cpp
+// (*) g++ Constants.hpp FDmesh.hpp Variables.hpp TimeStepper.hpp main.cpp
 // (*) ./a
 // (*) python surfingScript.py
 
@@ -36,14 +36,13 @@ int main()
     const double b = 10000.;                      //right endpoint
     const double c = 0.;                          //bottom endpoint
     const double d = 10000.;                      //top endpoint
-    const int np = 4;                             //number of polynomials per element (2, 3, or 4)
-    const int ne = 25;                            //number of elements per level (layer)
+    const int n = 100;                             //degrees of freedom (nodes) per level
     const int nLev = 100;                         //number of levels (layers)
     const int rkStages = 4;                       //number of Runge-Kutta stages (2, 3, or 4)
     double t = 0.;                                //start time
-    const double dt = 1./4.;                      //time increment
-    const int nTimesteps = 6000;                  //number of timesteps
-    const int saveDelta = 40;                     //number of time steps between saves
+    const double dt = 1./8.;                      //time increment
+    const int nTimesteps = 12000;                  //number of timesteps
+    const int saveDelta = 80;                     //number of time steps between saves
     
     int i, j, k;
     
@@ -51,7 +50,7 @@ int main()
     const Constants C;
     
     //Initialize mesh:
-    const DGmesh M( a, b, c, d, np, ne, nLev );
+    const FDmesh M( a, b, c, d, n, nLev );
     
     //set up the prognostic and diagnostic variables:
     Variables V( C, M );
@@ -67,14 +66,9 @@ int main()
     //Precision for printing to text files:
     const int pr = 16;
     
-    //Save number of polynomials per element:
-    outFile.open( "np.txt" );
-    outFile << np;
-    outFile.close();
-    
-    //Save number of elements:
-    outFile.open( "ne.txt" );
-    outFile << ne;
+    //Save number of nodes per layer:
+    outFile.open( "n.txt" );
+    outFile << n;
     outFile.close();
     
     //Save start time:
