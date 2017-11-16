@@ -20,7 +20,7 @@ saveDelta = int( numpy.loadtxt( "saveDelta.txt" ) )    #number of timesteps betw
 
 ###########################################################################
 
-plotDelta = 10 * saveDelta;                            #number of timesteps between plots
+plotDelta = 10 * saveDelta                             #number of timesteps between plots
 a = min(x)
 b = max(x)
 dx = x[1] - x[0]

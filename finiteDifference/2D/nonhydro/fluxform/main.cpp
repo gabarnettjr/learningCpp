@@ -5,7 +5,7 @@
 #include <sstream>
 #include <iomanip>
 
-#include "Constants.hpp"
+#include "Parameters.hpp"
 #include "FDmesh.hpp"
 #include "Variables.hpp"
 #include "TimeStepper.hpp"
@@ -25,38 +25,28 @@
 
 //Instructions:
 // (*) mkdir rho rhoU rhoW rhoTh
-// (*) g++ Constants.hpp FDmesh.hpp Variables.hpp TimeStepper.hpp main.cpp
+// (*) g++ Parameters.hpp FDmesh.hpp Variables.hpp TimeStepper.hpp main.cpp
 // (*) ./a
 // (*) python surfingScript.py
 
 int main()
-{   
-    //Parameters that the user chooses:
-    const double a = 0.;                          //left endpoint
-    const double b = 10000.;                      //right endpoint
-    const double c = 0.;                          //bottom endpoint
-    const double d = 10000.;                      //top endpoint
-    const int n = 100;                            //degrees of freedom (nodes) per level
-    const int nLev = 100;                         //number of levels (layers)
-    const int rkStages = 4;                       //number of Runge-Kutta stages (2, 3, or 4)
-    double t = 0.;                                //start time
-    const double dt = 1./8.;                      //time increment
-    const int nTimesteps = 12000;                 //number of timesteps
-    const int saveDelta = 80;                     //number of time steps between saves
+{
+    //choose which test case to do with this string (see Parameters.hpp for choices)
+    const std::string s( "risingBubble" );
+    
+    //Initialize parameters based on test case:
+    const Parameters P( s );
+    
+    //Initialize mesh based on parameters:
+    const FDmesh M( P );
+    
+    //Initialize variables based on test case, parameters, and mesh:
+    Variables V( s, P, M );
+    
+    //set Runge-Kutta time stepper:
+    TimeStepper T( P, V );
     
     int i, j, k;
-    
-    //physical constants:
-    const Constants C;
-    
-    //Initialize mesh:
-    const FDmesh M( a, b, c, d, n, nLev );
-    
-    //set up the prognostic and diagnostic variables:
-    Variables V( C, M );
-    
-    //set time stepper:
-    TimeStepper T( C, M, V, rkStages, nTimesteps, t, dt );
     
     ///////////////////////////////////////////////////////////////////////
     
@@ -68,83 +58,83 @@ int main()
     
     //Save number of nodes per layer:
     outFile.open( "n.txt" );
-    outFile << n;
+    outFile << P.n;
     outFile.close();
     
     //Save start time:
     outFile.open( "t.txt" );
-    outFile << std::scientific << std::setprecision(pr) << t;
+    outFile << std::scientific << std::setprecision(pr) << P.t;
     outFile.close();
     
     //Save time increment:
     outFile.open( "dt.txt" );
-    outFile << dt;
+    outFile << P.dt;
     outFile.close();
     
     //Save number of time-steps:
     outFile.open( "nTimesteps.txt" );
-    outFile << nTimesteps;
+    outFile << P.nTimesteps;
     outFile.close();
     
     //save number of timesteps between saves:
     outFile.open( "saveDelta.txt" );
-    outFile << saveDelta;
+    outFile << P.saveDelta;
     outFile.close();
     
     //save array of x-coordinates:
     outFile.open( "x.txt" );
-    for( i = 0; i < M.n; i++ ) {
+    for( i = 0; i < P.n; i++ ) {
         outFile << M.x[i] << " ";
     }
     outFile.close();
     
     //save array of z-coordinates:
     outFile.open( "z.txt" );
-    for( i = 0; i < nLev; i++ ) {
+    for( i = 0; i < P.nLev; i++ ) {
         outFile << M.z[i] << " ";
     }
     outFile.close();
     
     //save background density:
     outFile.open( "rhoBar.txt" );
-    for( i = 0; i < M.N; i++ ) {
+    for( i = 0; i < P.N; i++ ) {
         outFile << V.rhoBar[i] << " ";
     }
     outFile.close();
     
     //save background potential temperature"
     outFile.open( "thetaBar.txt" );
-    for( i = 0; i < M.N; i++ ) {
+    for( i = 0; i < P.N; i++ ) {
         outFile << V.thetaBar[i] << " ";
     }
     outFile.close();
     
     //save background Exner pressure:
     outFile.open( "piBar.txt" );
-    for( i = 0; i < M.N; i++ ) {
+    for( i = 0; i < P.N; i++ ) {
         outFile << V.piBar[i] << " ";
     }
     outFile.close();
     
     //save background pressure:
     outFile.open( "Pbar.txt" );
-    for( i = 0; i < M.N; i++ ) {
-        outFile << V.Pbar[i] << " ";
+    for( i = 0; i < P.N; i++ ) {
+        outFile << V.pBar[i] << " ";
     }
     outFile.close();
     
     //save constants:
     outFile.open( "Rd.txt" );
-    outFile << C.Rd;
+    outFile << P.Rd;
     outFile.close();
     outFile.open( "Po.txt" );
-    outFile << C.Po;
+    outFile << P.Po;
     outFile.close();
     outFile.open( "Cp.txt" );
-    outFile << C.Cp;
+    outFile << P.Cp;
     outFile.close();
     outFile.open( "Cv.txt" );
-    outFile << C.Cv;
+    outFile << P.Cv;
     outFile.close();
     
     ///////////////////////////////////////////////////////////////////////
@@ -153,8 +143,8 @@ int main()
     
     // double rhoMin;
     // double rhoMax;
-    double Pmin;
-    double Pmax;
+    double pMin;
+    double pMax;
     // double pipMin;
     // double pipMax;
     double thpMin;
@@ -164,15 +154,15 @@ int main()
     double wMin;
     double wMax;
     
-    for( j = 0; j < nTimesteps+1; j++ ) {
+    for( j = 0; j < P.nTimesteps+1; j++ ) {
         
-        if( j%saveDelta == 0 ) {
+        if( j%P.saveDelta == 0 ) {
         
             //save rho:
             std::stringstream s_rho;
             s_rho << "./rho/" << std::setfill('0') << std::setw(6) << j << ".txt";
             outFile.open( s_rho.str() );
-            for( i = 0; i < M.N; i++ ) {
+            for( i = 0; i < P.N; i++ ) {
                 outFile << V.rho[i] << " ";
             }
             outFile.close();
@@ -180,7 +170,7 @@ int main()
             std::stringstream s_rhoU;
             s_rhoU << "./rhoU/" << std::setfill('0') << std::setw(6) << j << ".txt";
             outFile.open( s_rhoU.str() );
-            for( i = 0; i < M.N; i++ ) {
+            for( i = 0; i < P.N; i++ ) {
                 outFile << V.rhoU[i] << " ";
             }
             outFile.close();
@@ -188,7 +178,7 @@ int main()
             std::stringstream s_rhoW;
             s_rhoW << "./rhoW/" << std::setfill('0') << std::setw(6) << j << ".txt";
             outFile.open( s_rhoW.str() );
-            for( i = 0; i < M.N; i++ ) {
+            for( i = 0; i < P.N; i++ ) {
                 outFile << V.rhoW[i] << " ";
             }
             outFile.close();
@@ -196,17 +186,17 @@ int main()
             std::stringstream s_rhoTh;
             s_rhoTh << "./rhoTh/" << std::setfill('0') << std::setw(6) << j << ".txt";
             outFile.open( s_rhoTh.str() );
-            for( i = 0; i < M.N; i++ ) {
+            for( i = 0; i < P.N; i++ ) {
                 outFile << V.rhoTh[i] << " ";
             }
             outFile.close();
         
             //print min and max:
             std::cout << "t = " << T.t << std::endl;
-            // pipMin = pow( V.P[0]/C.Po, C.Rd/C.Cp ) - V.piBar[0];
-            // pipMax = pow( V.P[0]/C.Po, C.Rd/C.Cp ) - V.piBar[0];
-            Pmin = V.P[0] - V.Pbar[0];
-            Pmax = V.P[0] - V.Pbar[0];
+            // pipMin = pow( V.p[0]/P.Po, P.Rd/P.Cp ) - V.piBar[0];
+            // pipMax = pow( V.p[0]/P.Po, P.Rd/P.Cp ) - V.piBar[0];
+            pMin = V.p[0] - V.pBar[0];
+            pMax = V.p[0] - V.pBar[0];
             // rhoMin = V.rho[0] - V.rhoBar[0];
             // rhoMax = V.rho[0] - V.rhoBar[0];
             thpMin = V.rhoTh[0] / V.rho[0] - V.thetaBar[0];
@@ -215,18 +205,18 @@ int main()
             uMax = V.rhoU[0] / V.rho[0];
             wMin = V.rhoW[0] / V.rho[0];
             wMax = V.rhoW[0] / V.rho[0];
-            for( k = 1; k < M.N; k++ ) {
-                // if( pow(V.P[k]/C.Po,C.Rd/C.Cp)-V.piBar[k] < pipMin ) {
-                    // pipMin = pow(V.P[k]/C.Po,C.Rd/C.Cp)-V.piBar[k];
+            for( k = 1; k < P.N; k++ ) {
+                // if( pow(V.p[k]/P.Po,P.Rd/P.Cp)-V.piBar[k] < pipMin ) {
+                    // pipMin = pow(V.p[k]/P.Po,P.Rd/P.Cp)-V.piBar[k];
                 // }
-                // if( pow(V.P[k]/C.Po,C.Rd/C.Cp)-V.piBar[k] > pipMax ) {
-                    // pipMax = pow(V.P[k]/C.Po,C.Rd/C.Cp)-V.piBar[k];
+                // if( pow(V.p[k]/P.Po,P.Rd/P.Cp)-V.piBar[k] > pipMax ) {
+                    // pipMax = pow(V.p[k]/P.Po,P.Rd/P.Cp)-V.piBar[k];
                 // }
-                if( V.P[k]-V.Pbar[k] < Pmin ) {
-                    Pmin = V.P[k]-V.Pbar[k];
+                if( V.p[k]-V.pBar[k] < pMin ) {
+                    pMin = V.p[k]-V.pBar[k];
                 }
-                if( V.P[k]-V.Pbar[k] > Pmax ) {
-                    Pmax = V.P[k]-V.Pbar[k];
+                if( V.p[k]-V.pBar[k] > pMax ) {
+                    pMax = V.p[k]-V.pBar[k];
                 }
                 // if( V.rho[k]-V.rhoBar[k] < rhoMin ) {
                     // rhoMin = V.rho[k]-V.rhoBar[k];
@@ -255,8 +245,8 @@ int main()
             }
             // std::cout << "minPip = " << pipMin << std::endl;
             // std::cout << "maxPip = " << pipMax << std::endl;
-            std::cout << "minP = " << Pmin << std::endl;
-            std::cout << "maxP = " << Pmax << std::endl;
+            std::cout << "minP = " << pMin << std::endl;
+            std::cout << "maxP = " << pMax << std::endl;
             // std::cout << "minRho = " << rhoMin << std::endl;
             // std::cout << "maxRho = " << rhoMax << std::endl;
             std::cout << "minThp = " << thpMin << std::endl;
@@ -268,7 +258,7 @@ int main()
         }
         
         //advance (rho,rhoU,rhoW,rhoTh,P) and t with a single Runge-Kutta time step:
-        T.rk( C, M, V );
+        T.rk( P, V );
     }
     
     return 0;
