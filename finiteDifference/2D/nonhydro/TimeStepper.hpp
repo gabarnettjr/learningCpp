@@ -13,8 +13,6 @@ class TimeStepper {
         
         TimeStepper( const Parameters&, Variables& );
         
-        double t;
-        
         void rk( const Parameters&, Variables& );
         
     private:
@@ -44,6 +42,9 @@ class TimeStepper {
         double* F;
         double* G;
         int i, j, k;        //used in for-loops
+        double* wx;         //first derivative weights
+        double* whv;        //hyperviscosity weights
+        double gamma;       //HV coefficient (vertical only, for now)
         
         void singleVariableRHS( const Parameters&, const Variables&,
         const double[], const double[], const double[],
@@ -55,7 +56,6 @@ class TimeStepper {
 };
 
 TimeStepper::TimeStepper( const Parameters& P, Variables& V ) {
-    t = P.t;
     
     //temporary pressure variable:
     p = new double[P.N];
@@ -85,6 +85,31 @@ TimeStepper::TimeStepper( const Parameters& P, Variables& V ) {
     //used inside singleVariableRHS:
     F = new double[P.N];
     G = new double[P.N];
+    
+    //arrays of finite difference weights:
+    wx  = new double[P.stenX];
+    whv = new double[P.stenX];
+    if( P.stenX == 3 ) {
+        wx[0] = -1./2.;
+        wx[1] = 0.;
+        wx[2] = 1./2.;
+        whv[0] = 1.;
+        whv[1] = -2.;
+        whv[2] = 1.;
+    }
+    else if( P.stenX == 5 ) {
+        wx[0] = 1./12.;
+        wx[1] = -2./3.;
+        wx[2] = 0.;
+        wx[3] = 2./3.;
+        wx[4] = -1./12.;
+        whv[0] = 1.;
+        whv[1] = -4.;
+        whv[2] = 6.;
+        whv[3] = -4.;
+        whv[4] = 1.;
+    }
+    gamma = .1;
 }
 
 inline void TimeStepper::singleVariableRHS( const Parameters& P, const Variables& V,
@@ -92,92 +117,81 @@ const double rho[], const double rhoU[], const double rhoW[],
 double rhoPrime[] ) {
     //Sets rhoPrime equal to -d(rhoU)/dx - d(rhoW)/dz, using FD for d/dx and d/dz.
     //This is used for each of the four prognostic variables: rho, rhoU, rhoW, rhoTh.
-    for( k = 0; k < P.nLev; k++ ) {
-        //lateral operations using FD:
-        if( P.stenX == 3 ) {
-            for( i=0; i<P.n; i++ ) {
-                if( i == 0 ) {
-                    rhoPrime[k*P.n+i] = - ( rhoU[k*P.n+(i+1)] - rhoU[k*P.n+(P.n-1)] ) / (2*P.dx)
-                    + std::abs( V.rhoU[k*P.n+i] / V.rho[k*P.n+i] ) * P.dx/2
-                    * ( rho[k*P.n+(P.n-1)] - 2*rho[k*P.n+i] + rho[k*P.n+(i+1)] ) / pow(P.dx,2.);
-                }
-                else if( i == P.n-1 ) {
-                    rhoPrime[k*P.n+i] = - ( rhoU[k*P.n+0] - rhoU[k*P.n+(i-1)] ) / (2*P.dx)
-                    + std::abs( V.rhoU[k*P.n+i] / V.rho[k*P.n+i] ) * P.dx/2
-                    * ( rho[k*P.n+(i-1)] - 2*rho[k*P.n+i] + rho[k*P.n+0] ) / pow(P.dx,2.);
-                }
-                else {
-                    rhoPrime[k*P.n+i] = - ( rhoU[k*P.n+(i+1)] - rhoU[k*P.n+(i-1)] ) / (2*P.dx)
-                    + std::abs( V.rhoU[k*P.n+i] / V.rho[k*P.n+i] ) * P.dx/2
-                    * ( rho[k*P.n+(i-1)] - 2*rho[k*P.n+i] + rho[k*P.n+(i+1)] ) / pow(P.dx,2.);
-                }
+    //lateral operations using FD:
+    if( P.stenX == 3 ) {
+        for( k = 0; k < P.nLev; k++ ) {
+            //i = 0:
+            rhoPrime[k*P.n] = - ( wx[0]*rhoU[k*P.n+(P.n-1)] + wx[2]*rhoU[k*P.n+1] ) / P.dx
+            + std::abs( V.rhoU[k*P.n] / V.rho[k*P.n] ) * P.dx/2
+            * ( whv[0]*rho[k*P.n+(P.n-1)] + whv[1]*rho[k*P.n] + whv[2]*rho[k*P.n+1] ) / pow(P.dx,2.);
+            //mid-range i:
+            for( i=1; i<P.n-1; i++ ) {
+                rhoPrime[k*P.n+i] = - ( wx[0]*rhoU[k*P.n+(i-1)] + wx[2]*rhoU[k*P.n+(i+1)] ) / P.dx
+                + std::abs( V.rhoU[k*P.n+i] / V.rho[k*P.n+i] ) * P.dx/2
+                * ( whv[0]*rho[k*P.n+(i-1)] + whv[1]*rho[k*P.n+i] + whv[2]*rho[k*P.n+(i+1)] ) / pow(P.dx,2.);
             }
+            //i = P.n-1:
+            rhoPrime[k*P.n+(P.n-1)] = - ( wx[0]*rhoU[k*P.n+(P.n-2)] + wx[2]*rhoU[k*P.n] ) / P.dx
+            + std::abs( V.rhoU[k*P.n+(P.n-1)] / V.rho[k*P.n+P.n-1] ) * P.dx/2
+            * ( whv[0]*rho[k*P.n+(P.n-2)] + whv[1]*rho[k*P.n+(P.n-1)] + whv[2]*rho[k*P.n] ) / pow(P.dx,2.);
         }
-        else if( P.stenX == 5 ) {
-            for( i=0; i<P.n; i++ ) {
-                if( i == 0 ) {
-                    rhoPrime[k*P.n+i] = - ( 1./12.*rhoU[k*P.n+(P.n-2)] - 2./3.*rhoU[k*P.n+(P.n-1)]
-                    + 2./3.*rhoU[k*P.n+(i+1)] - 1./12.*rhoU[k*P.n+(i+2)] ) / P.dx
-                    - std::abs( V.rhoU[k*P.n+i] / V.rho[k*P.n+i] ) * pow(P.dx,3.)/12.
-                    * ( rho[k*P.n+(P.n-2)] - 4.*rho[k*P.n+(P.n-1)] + 6.*rho[k*P.n+i]
-                    - 4.*rho[k*P.n+(i+1)] + rho[k*P.n+(i+2)] ) / pow(P.dx,4.);
-                }
-                else if( i == 1 ) {
-                    rhoPrime[k*P.n+i] = - ( 1./12.*rhoU[k*P.n+(P.n-1)] - 2./3.*rhoU[k*P.n+(i-1)]
-                    + 2./3.*rhoU[k*P.n+(i+1)] - 1./12.*rhoU[k*P.n+(i+2)] ) / P.dx
-                    - std::abs( V.rhoU[k*P.n+i] / V.rho[k*P.n+i] ) * pow(P.dx,3.)/12.
-                    * ( rho[k*P.n+(P.n-1)] - 4.*rho[k*P.n+(i-1)] + 6.*rho[k*P.n+i]
-                    - 4.*rho[k*P.n+(i+1)] + rho[k*P.n+(i+2)] ) / pow(P.dx,4.);
-                }
-                else if( i == P.n-2 ) {
-                    rhoPrime[k*P.n+i] = - ( 1./12.*rhoU[k*P.n+(i-2)] - 2./3.*rhoU[k*P.n+(i-1)]
-                    + 2./3.*rhoU[k*P.n+(i+1)] - 1./12.*rhoU[k*P.n+(0)] ) / P.dx
-                    - std::abs( V.rhoU[k*P.n+i] / V.rho[k*P.n+i] ) * pow(P.dx,3.)/12.
-                    * ( rho[k*P.n+(i-2)] - 4.*rho[k*P.n+(i-1)] + 6.*rho[k*P.n+i]
-                    - 4.*rho[k*P.n+(i+1)] + rho[k*P.n+(0)] ) / pow(P.dx,4.);
-                }
-                else if( i == P.n-1 ) {
-                    rhoPrime[k*P.n+i] = - ( 1./12.*rhoU[k*P.n+(i-2)] - 2./3.*rhoU[k*P.n+(i-1)]
-                    + 2./3.*rhoU[k*P.n+(0)] - 1./12.*rhoU[k*P.n+(1)] ) / P.dx
-                    - std::abs( V.rhoU[k*P.n+i] / V.rho[k*P.n+i] ) * pow(P.dx,3.)/12.
-                    * ( rho[k*P.n+(i-2)] - 4.*rho[k*P.n+(i-1)] + 6.*rho[k*P.n+i]
-                    - 4.*rho[k*P.n+(0)] + rho[k*P.n+(1)] ) / pow(P.dx,4.);
-                }
-                else {
-                    rhoPrime[k*P.n+i] = - ( 1./12.*rhoU[k*P.n+(i-2)] - 2./3.*rhoU[k*P.n+(i-1)]
-                    + 2./3.*rhoU[k*P.n+(i+1)] - 1./12.*rhoU[k*P.n+(i+2)] ) / P.dx
-                    - std::abs( V.rhoU[k*P.n+i] / V.rho[k*P.n+i] ) * pow(P.dx,3.)/12.
-                    * ( rho[k*P.n+(i-2)] - 4.*rho[k*P.n+(i-1)] + 6.*rho[k*P.n+i]
-                    - 4.*rho[k*P.n+(i+1)] + rho[k*P.n+(i+2)] ) / pow(P.dx,4.);
-                }
+    }
+    else if( P.stenX == 5 ) {
+        for( k = 0; k < P.nLev; k++ ) {
+            //i = 0:
+            rhoPrime[k*P.n] = - ( wx[0]*rhoU[k*P.n+(P.n-2)] + wx[1]*rhoU[k*P.n+(P.n-1)]
+            + wx[3]*rhoU[k*P.n+1] + wx[4]*rhoU[k*P.n+2] ) / P.dx
+            - std::abs( V.rhoU[k*P.n] / V.rho[k*P.n] ) * pow(P.dx,3.)/12.
+            * ( whv[0]*rho[k*P.n+(P.n-2)] + whv[1]*rho[k*P.n+(P.n-1)] + whv[2]*rho[k*P.n]
+            + whv[3]*rho[k*P.n+1] + whv[4]*rho[k*P.n+1] ) / pow(P.dx,4.);
+            //i = 1:
+            rhoPrime[k*P.n+1] = - ( wx[0]*rhoU[k*P.n+(P.n-1)] + wx[1]*rhoU[k*P.n]
+            + wx[3]*rhoU[k*P.n+2] + wx[4]*rhoU[k*P.n+3] ) / P.dx
+            - std::abs( V.rhoU[k*P.n+1] / V.rho[k*P.n+1] ) * pow(P.dx,3.)/12.
+            * ( whv[0]*rho[k*P.n+(P.n-1)] + whv[1]*rho[k*P.n] + whv[2]*rho[k*P.n+1]
+            + whv[3]*rho[k*P.n+2] + whv[4]*rho[k*P.n+3] ) / pow(P.dx,4.);
+            //mid-range i:
+            for( i = 2; i<P.n-2; i++ ) {
+                rhoPrime[k*P.n+i] = - ( wx[0]*rhoU[k*P.n+(i-2)] + wx[1]*rhoU[k*P.n+(i-1)]
+                + wx[3]*rhoU[k*P.n+(i+1)] + wx[4]*rhoU[k*P.n+(i+2)] ) / P.dx
+                - std::abs( V.rhoU[k*P.n+i] / V.rho[k*P.n+i] ) * pow(P.dx,3.)/12.
+                * ( whv[0]*rho[k*P.n+(i-2)] + whv[1]*rho[k*P.n+(i-1)] + whv[2]*rho[k*P.n+i]
+                + whv[3]*rho[k*P.n+(i+1)] + whv[4]*rho[k*P.n+(i+2)] ) / pow(P.dx,4.);
             }
+            //i = P.n-2:
+            rhoPrime[k*P.n+(P.n-2)] = - ( wx[0]*rhoU[k*P.n+(P.n-4)] + wx[1]*rhoU[k*P.n+(P.n-3)]
+            + wx[3]*rhoU[k*P.n+(P.n-1)] + wx[4]*rhoU[k*P.n+(0)] ) / P.dx
+            - std::abs( V.rhoU[k*P.n+(P.n-2)] / V.rho[k*P.n+(P.n-2)] ) * pow(P.dx,3.)/12.
+            * ( whv[0]*rho[k*P.n+(P.n-4)] + whv[1]*rho[k*P.n+(P.n-3)] + whv[2]*rho[k*P.n+(P.n-2)]
+            + whv[3]*rho[k*P.n+(P.n-1)] + whv[4]*rho[k*P.n+(0)] ) / pow(P.dx,4.);
+            //i = P.n-1:
+            rhoPrime[k*P.n+(P.n-1)] = - ( wx[0]*rhoU[k*P.n+(P.n-3)] + wx[1]*rhoU[k*P.n+(P.n-2)]
+            + wx[3]*rhoU[k*P.n+(0)] + wx[4]*rhoU[k*P.n+(1)] ) / P.dx
+            - std::abs( V.rhoU[k*P.n+(P.n-1)] / V.rho[k*P.n+(P.n-1)] ) * pow(P.dx,3.)/12.
+            * ( whv[0]*rho[k*P.n+(P.n-3)] + whv[1]*rho[k*P.n+(P.n-2)] + whv[2]*rho[k*P.n+(P.n-1)]
+            + whv[3]*rho[k*P.n+(0)] + whv[4]*rho[k*P.n+(0+1)] ) / pow(P.dx,4.);
         }
-        else {
-            std::cerr << "Error: stenX should be 3 or 5.";
-            std::exit( EXIT_FAILURE );
+    }
+    else {
+        std::cerr << "Error: stenX should be 3 or 5.";
+        std::exit( EXIT_FAILURE );
+    }
+    //vertical operations using FD2:
+    for( i = 0; i < P.n; i++ ) {
+        //k = 0:
+        rhoPrime[0*P.n+i] = rhoPrime[0*P.n+i] - ( rhoW[(0+1)*P.n+i] - -rhoW[(0)*P.n+i] ) / (2*P.dz)
+        + std::abs( V.rhoW[0*P.n+i] / V.rho[0*P.n+i] ) * P.dz/2.
+        * ( rho[(0)*P.n+i] - 2.*rho[0*P.n+i] + rho[(0+1)*P.n+i] ) / pow(P.dz,2.);
+        //mid-range k:
+        for( k = 1; k < P.nLev-1; k++ ) {
+            rhoPrime[k*P.n+i] = rhoPrime[k*P.n+i] - ( rhoW[(k+1)*P.n+i] - rhoW[(k-1)*P.n+i] ) / (2*P.dz)
+            + std::abs( V.rhoW[k*P.n+i] / V.rho[k*P.n+i] ) * P.dz/2.
+            * ( rho[(k-1)*P.n+i] - 2.*rho[k*P.n+i] + rho[(k+1)*P.n+i] ) / pow(P.dz,2.);
         }
-        //vertical operations using FD2:
-        if( k == 0 ) {
-            for( i = 0; i < P.n; i++ ) { //reflect over bottom boundary since w=0 there:
-                rhoPrime[k*P.n+i] = rhoPrime[k*P.n+i] - ( rhoW[(k+1)*P.n+i] - -rhoW[k*P.n+i] ) / (2*P.dz)
-                + std::abs( V.rhoW[k*P.n+i] / V.rho[k*P.n+i] ) * P.dz/2.
-                * ( rho[k*P.n+i] - 2.*rho[(k+1)*P.n+i] + rho[(k+2)*P.n+i] ) / pow(P.dz,2.);
-            }
-        }
-        else if( k == P.nLev-1 ) { //reflect over top boundary since w=0 there:
-            for( i = 0; i < P.n; i++ ) {
-                rhoPrime[k*P.n+i] = rhoPrime[k*P.n+i] - ( -rhoW[k*P.n+i] - rhoW[(k-1)*P.n+i] ) / (2*P.dz)
-                + std::abs( V.rhoW[k*P.n+i] / V.rho[k*P.n+i] ) * P.dz/2.
-                * ( rho[(k-2)*P.n+i] - 2.*rho[(k-1)*P.n+i] + rho[k*P.n+i] ) / pow(P.dz,2.);
-            }
-        }
-        else {
-            for( i = 0; i < P.n; i++ ) {
-                rhoPrime[k*P.n+i] = rhoPrime[k*P.n+i] - ( rhoW[(k+1)*P.n+i] - rhoW[(k-1)*P.n+i] ) / (2*P.dz)
-                + std::abs( V.rhoW[k*P.n+i] / V.rho[k*P.n+i] ) * P.dz/2.
-                * ( rho[(k-1)*P.n+i] - 2.*rho[k*P.n+i] + rho[(k+1)*P.n+i] ) / pow(P.dz,2.);
-            }
-        }
+        //k = P.nLev-1:
+        rhoPrime[(P.nLev-1)*P.n+i] = rhoPrime[(P.nLev-1)*P.n+i] - ( -rhoW[(P.nLev-1)*P.n+i] - rhoW[(P.nLev-2)*P.n+i] ) / (2*P.dz)
+        + std::abs( V.rhoW[(P.nLev-1)*P.n+i] / V.rho[(P.nLev-1)*P.n+i] ) * P.dz/2.
+        * ( rho[(P.nLev-2)*P.n+i] - 2.*rho[(P.nLev-1)*P.n+i] + rho[(P.nLev-1)*P.n+i] ) / pow(P.dz,2.);
     }
 }
 
@@ -200,27 +214,20 @@ double rhoPrime[], double rhoUprime[], double rhoWprime[], double rhoThPrime[] )
         F[i] = rhoW[i] * rhoW[i] / rho[i];
     }
     singleVariableRHS( P, V, rhoW, G, F, rhoWprime );
-    for( k = 0; k < P.nLev; k++ ) { //adding missing terms ( - dP/dz - rho*g ):
-        if( k == 0 ) { //lowest layer (extrapolate rho and enforce dP/dz = -rho*g):
-            for( i = 0; i < P.n; i++ ) {
-                tmpD = p[k*P.n+i] + P.g*P.dz * ( 3.*rho[k*P.n+i] - rho[(k+1)*P.n+i] ) / 2.;
-                rhoWprime[k*P.n+i] = rhoWprime[k*P.n+i] - ( p[(k+1)*P.n+i] - tmpD ) / (2.*P.dz)
-                - rho[k*P.n+i] * P.g;
-            }
+    for( i = 0; i < P.n; i++ ) {
+        //k = 0:
+        tmpD = p[0*P.n+i] + P.g*P.dz * ( 3.*rho[0*P.n+i] - rho[(0+1)*P.n+i] ) / 2.;
+        rhoWprime[0*P.n+i] = rhoWprime[0*P.n+i] - ( p[(0+1)*P.n+i] - tmpD ) / (2.*P.dz)
+        - rho[0*P.n+i] * P.g;
+        //mid-range k:
+        for( k = 1; k < P.nLev-1; k++ ) {
+            rhoWprime[k*P.n+i] = rhoWprime[k*P.n+i] - ( p[(k+1)*P.n+i] - p[(k-1)*P.n+i] ) / (2.*P.dz)
+            - rho[k*P.n+i] * P.g;
         }
-        else if( k == P.nLev-1 ) { //highest layer (extrapolate rho and enforce dP/dz = -rho*g):
-            for( i = 0; i < P.n; i++ ) {
-                tmpD = p[k*P.n+i] - P.g*P.dz * ( 3.*rho[k*P.n+i] - rho[(k-1)*P.n+i] ) / 2.;
-                rhoWprime[k*P.n+i] = rhoWprime[k*P.n+i] - ( tmpD - p[(k-1)*P.n+i] ) / (2.*P.dz)
-                - rho[k*P.n+i] * P.g;
-            }
-        }
-        else { //all other layers:
-            for( i = 0; i < P.n; i++ ) {
-                rhoWprime[k*P.n+i] = rhoWprime[k*P.n+i] - ( p[(k+1)*P.n+i] - p[(k-1)*P.n+i] ) / (2.*P.dz)
-                - rho[k*P.n+i] * P.g;
-            }
-        }
+        //k = P.nLev-1:
+        tmpD = p[(P.nLev-1)*P.n+i] - P.g*P.dz * ( 3.*rho[(P.nLev-1)*P.n+i] - rho[(P.nLev-2)*P.n+i] ) / 2.;
+        rhoWprime[(P.nLev-1)*P.n+i] = rhoWprime[(P.nLev-1)*P.n+i] - ( tmpD - p[(P.nLev-2)*P.n+i] ) / (2.*P.dz)
+        - rho[(P.nLev-1)*P.n+i] * P.g;
     }
     //rhoTh:
     for( i = 0; i < P.N; i++ ) {
@@ -236,7 +243,7 @@ inline void TimeStepper::rk( const Parameters& P, Variables& V ) {
         //stage 1:
         odeFun( P, V, V.rho, V.rhoU, V.rhoW, V.rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //stage 2:
-        t = t + P.dt/2.;
+        V.t = V.t + P.dt/2.;
         for( i = 0; i < P.N; i++ ) {
             tmp_rho[i]   = V.rho[i]   + P.dt/2. * s1_rho[i];
             tmp_rhoU[i]  = V.rhoU[i]  + P.dt/2. * s1_rhoU[i];
@@ -245,7 +252,7 @@ inline void TimeStepper::rk( const Parameters& P, Variables& V ) {
         }
         odeFun( P, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //update t and get new value of rho:
-        t = t + P.dt/2.;
+        V.t = V.t + P.dt/2.;
         for( i = 0; i < P.N; i++ ) {
             V.rho[i]   = V.rho[i]   + P.dt * s1_rho[i];
             V.rhoU[i]  = V.rhoU[i]  + P.dt * s1_rhoU[i];
@@ -259,7 +266,7 @@ inline void TimeStepper::rk( const Parameters& P, Variables& V ) {
         //stage 1:
         odeFun( P, V, V.rho, V.rhoU, V.rhoW, V.rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //stage 2:
-        t = t + P.dt/3.;
+        V.t = V.t + P.dt/3.;
         for( i = 0; i < P.N; i++ ) {
             tmp_rho[i]   = V.rho[i]   + P.dt/3. * s1_rho[i];
             tmp_rhoU[i]  = V.rhoU[i]  + P.dt/3. * s1_rhoU[i];
@@ -268,7 +275,7 @@ inline void TimeStepper::rk( const Parameters& P, Variables& V ) {
         }
         odeFun( P, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s2_rho, s2_rhoU, s2_rhoW, s2_rhoTh );
         //stage 3:
-        t = t + P.dt/3.;
+        V.t = V.t + P.dt/3.;
         for( i = 0; i < P.N; i++ ) {
             tmp_rho[i]   = V.rho[i]   + 2*P.dt/3. * s2_rho[i];
             tmp_rhoU[i]  = V.rhoU[i]  + 2*P.dt/3. * s2_rhoU[i];
@@ -277,7 +284,7 @@ inline void TimeStepper::rk( const Parameters& P, Variables& V ) {
         }
         odeFun( P, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s2_rho, s2_rhoU, s2_rhoW, s2_rhoTh );
         //update t and get new value of rho:
-        t = t + P.dt/3.;
+        V.t = V.t + P.dt/3.;
         for( i = 0; i < P.N; i++ ) {
             V.rho[i]   = V.rho[i]   + P.dt/4. * ( s1_rho[i]   + 3*s2_rho[i] );
             V.rhoU[i]  = V.rhoU[i]  + P.dt/4. * ( s1_rhoU[i]  + 3*s2_rhoU[i] );
@@ -291,7 +298,7 @@ inline void TimeStepper::rk( const Parameters& P, Variables& V ) {
         //stage 1:
         odeFun( P, V, V.rho, V.rhoU, V.rhoW, V.rhoTh, s1_rho, s1_rhoU, s1_rhoW, s1_rhoTh );
         //stage 2:
-        t = t + P.dt/2.;
+        V.t = V.t + P.dt/2.;
         for( i = 0; i < P.N; i++ ) {
             tmp_rho[i]   = V.rho[i]   + P.dt/2. * s1_rho[i];
             tmp_rhoU[i]  = V.rhoU[i]  + P.dt/2. * s1_rhoU[i];
@@ -308,7 +315,7 @@ inline void TimeStepper::rk( const Parameters& P, Variables& V ) {
         }
         odeFun( P, V, tmp_rho, tmp_rhoU, tmp_rhoW, tmp_rhoTh, s3_rho, s3_rhoU, s3_rhoW, s3_rhoTh );
         //stage 4:
-        t = t + P.dt/2;
+        V.t = V.t + P.dt/2;
         for( i = 0; i < P.N; i++ ) {
             tmp_rho[i]   = V.rho[i]   + P.dt * s3_rho[i];
             tmp_rhoU[i]  = V.rhoU[i]  + P.dt * s3_rhoU[i];

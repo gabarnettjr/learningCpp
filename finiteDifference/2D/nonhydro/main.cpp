@@ -32,7 +32,7 @@
 int main()
 {
     //choose which test case to do with this string (see Parameters.hpp for choices)
-    const std::string s( "risingBubble" );
+    const std::string s( "inertiaGravityWaves" );
     
     //Initialize parameters based on test case:
     const Parameters P( s );
@@ -56,9 +56,9 @@ int main()
     //Precision for printing to text files:
     const int pr = 16;
     
-    //Save number of nodes per layer:
-    outFile.open( "n.txt" );
-    outFile << P.n;
+    //save name of test:
+    outFile.open( "s.txt" );
+    outFile << s;
     outFile.close();
     
     //Save start time:
@@ -117,7 +117,7 @@ int main()
     outFile.close();
     
     //save background pressure:
-    outFile.open( "Pbar.txt" );
+    outFile.open( "pBar.txt" );
     for( i = 0; i < P.N; i++ ) {
         outFile << V.pBar[i] << " ";
     }
@@ -192,7 +192,7 @@ int main()
             outFile.close();
         
             //print min and max:
-            std::cout << "t = " << T.t << std::endl;
+            std::cout << "t = " << V.t << std::endl;
             // pipMin = pow( V.p[0]/P.Po, P.Rd/P.Cp ) - V.piBar[0];
             // pipMax = pow( V.p[0]/P.Po, P.Rd/P.Cp ) - V.piBar[0];
             pMin = V.p[0] - V.pBar[0];
