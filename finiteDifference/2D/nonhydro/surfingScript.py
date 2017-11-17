@@ -24,7 +24,7 @@ saveDelta = int( numpy.loadtxt( "saveDelta.txt" ) )    #number of timesteps betw
 
 ###########################################################################
 
-plotDelta = 10 * saveDelta                             #number of timesteps between plots
+plotDelta = 1  * saveDelta                             #number of timesteps between plots
 a = min(x)
 b = max(x)
 dx = x[1] - x[0]
@@ -36,7 +36,7 @@ nLev = len(z)
 xx = numpy.tile( x, (nLev,1) )
 zz = numpy.transpose( numpy.tile( z, (n,1) ) )
 
-var = "thetaPrime"                                     #choose which variable to look at
+var = "w"                                     #choose which variable to look at
 
 for i in numpy.arange(0,nTimesteps+1,plotDelta) :
 
@@ -76,12 +76,16 @@ for i in numpy.arange(0,nTimesteps+1,plotDelta) :
         tmp = tmp / rho
         if s == "risingBubble" :
             cv = numpy.arange( -6.5, 7.5, 1 )
+        elif s == "inertiaGravityWaves" :
+            cv = numpy.arange( 19.99, 20.011, .001 )
     elif var == "w" :
         rho = numpy.loadtxt( './rho/' + str(i).zfill(6) + '.txt' )
         tmp = numpy.loadtxt( './rhoW/' + str(i).zfill(6) + '.txt' )
         tmp = tmp / rho
         if s == "risingBubble" :
             cv = numpy.arange( -8.5, 11.5, 1 )
+        elif s == "inertiaGravityWaves" :
+            cv = numpy.arange( -.01, .0101, .001 )
     
     approx = numpy.reshape( tmp, (nLev,n) )
     

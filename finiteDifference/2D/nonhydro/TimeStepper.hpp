@@ -45,6 +45,8 @@ class TimeStepper {
         double* wx;         //first derivative weights
         double* whv;        //hyperviscosity weights
         double gamma;       //HV coefficient (vertical only, for now)
+        double* u;          //temporary horizontal velocity array
+        double* w;          //temporary vertical velocity array
         
         void singleVariableRHS( const Parameters&, const Variables&,
         const double[], const double[], const double[],
@@ -110,6 +112,8 @@ TimeStepper::TimeStepper( const Parameters& P, Variables& V ) {
         whv[4] = 1.;
     }
     gamma = .1;
+    u = new double[P.N];
+    w = new double[P.N];
 }
 
 inline void TimeStepper::singleVariableRHS( const Parameters& P, const Variables& V,
@@ -122,17 +126,17 @@ double rhoPrime[] ) {
         for( k = 0; k < P.nLev; k++ ) {
             //i = 0:
             rhoPrime[k*P.n] = - ( wx[0]*rhoU[k*P.n+(P.n-1)] + wx[2]*rhoU[k*P.n+1] ) / P.dx
-            + std::abs( V.rhoU[k*P.n] / V.rho[k*P.n] ) * P.dx/2
+            + std::abs( u[k*P.n] ) * P.dx/2
             * ( whv[0]*rho[k*P.n+(P.n-1)] + whv[1]*rho[k*P.n] + whv[2]*rho[k*P.n+1] ) / pow(P.dx,2.);
             //mid-range i:
             for( i=1; i<P.n-1; i++ ) {
                 rhoPrime[k*P.n+i] = - ( wx[0]*rhoU[k*P.n+(i-1)] + wx[2]*rhoU[k*P.n+(i+1)] ) / P.dx
-                + std::abs( V.rhoU[k*P.n+i] / V.rho[k*P.n+i] ) * P.dx/2
+                + std::abs( u[k*P.n+i] ) * P.dx/2
                 * ( whv[0]*rho[k*P.n+(i-1)] + whv[1]*rho[k*P.n+i] + whv[2]*rho[k*P.n+(i+1)] ) / pow(P.dx,2.);
             }
             //i = P.n-1:
             rhoPrime[k*P.n+(P.n-1)] = - ( wx[0]*rhoU[k*P.n+(P.n-2)] + wx[2]*rhoU[k*P.n] ) / P.dx
-            + std::abs( V.rhoU[k*P.n+(P.n-1)] / V.rho[k*P.n+P.n-1] ) * P.dx/2
+            + std::abs( u[k*P.n+P.n-1] ) * P.dx/2
             * ( whv[0]*rho[k*P.n+(P.n-2)] + whv[1]*rho[k*P.n+(P.n-1)] + whv[2]*rho[k*P.n] ) / pow(P.dx,2.);
         }
     }
@@ -141,33 +145,33 @@ double rhoPrime[] ) {
             //i = 0:
             rhoPrime[k*P.n] = - ( wx[0]*rhoU[k*P.n+(P.n-2)] + wx[1]*rhoU[k*P.n+(P.n-1)]
             + wx[3]*rhoU[k*P.n+1] + wx[4]*rhoU[k*P.n+2] ) / P.dx
-            - std::abs( V.rhoU[k*P.n] / V.rho[k*P.n] ) * pow(P.dx,3.)/12.
+            - std::abs( u[k*P.n] ) * pow(P.dx,3.)/12.
             * ( whv[0]*rho[k*P.n+(P.n-2)] + whv[1]*rho[k*P.n+(P.n-1)] + whv[2]*rho[k*P.n]
             + whv[3]*rho[k*P.n+1] + whv[4]*rho[k*P.n+1] ) / pow(P.dx,4.);
             //i = 1:
             rhoPrime[k*P.n+1] = - ( wx[0]*rhoU[k*P.n+(P.n-1)] + wx[1]*rhoU[k*P.n]
             + wx[3]*rhoU[k*P.n+2] + wx[4]*rhoU[k*P.n+3] ) / P.dx
-            - std::abs( V.rhoU[k*P.n+1] / V.rho[k*P.n+1] ) * pow(P.dx,3.)/12.
+            - std::abs( u[k*P.n+1] ) * pow(P.dx,3.)/12.
             * ( whv[0]*rho[k*P.n+(P.n-1)] + whv[1]*rho[k*P.n] + whv[2]*rho[k*P.n+1]
             + whv[3]*rho[k*P.n+2] + whv[4]*rho[k*P.n+3] ) / pow(P.dx,4.);
             //mid-range i:
             for( i = 2; i<P.n-2; i++ ) {
                 rhoPrime[k*P.n+i] = - ( wx[0]*rhoU[k*P.n+(i-2)] + wx[1]*rhoU[k*P.n+(i-1)]
                 + wx[3]*rhoU[k*P.n+(i+1)] + wx[4]*rhoU[k*P.n+(i+2)] ) / P.dx
-                - std::abs( V.rhoU[k*P.n+i] / V.rho[k*P.n+i] ) * pow(P.dx,3.)/12.
+                - std::abs( u[k*P.n+i] ) * pow(P.dx,3.)/12.
                 * ( whv[0]*rho[k*P.n+(i-2)] + whv[1]*rho[k*P.n+(i-1)] + whv[2]*rho[k*P.n+i]
                 + whv[3]*rho[k*P.n+(i+1)] + whv[4]*rho[k*P.n+(i+2)] ) / pow(P.dx,4.);
             }
             //i = P.n-2:
             rhoPrime[k*P.n+(P.n-2)] = - ( wx[0]*rhoU[k*P.n+(P.n-4)] + wx[1]*rhoU[k*P.n+(P.n-3)]
             + wx[3]*rhoU[k*P.n+(P.n-1)] + wx[4]*rhoU[k*P.n+(0)] ) / P.dx
-            - std::abs( V.rhoU[k*P.n+(P.n-2)] / V.rho[k*P.n+(P.n-2)] ) * pow(P.dx,3.)/12.
+            - std::abs( u[k*P.n+(P.n-2)] ) * pow(P.dx,3.)/12.
             * ( whv[0]*rho[k*P.n+(P.n-4)] + whv[1]*rho[k*P.n+(P.n-3)] + whv[2]*rho[k*P.n+(P.n-2)]
             + whv[3]*rho[k*P.n+(P.n-1)] + whv[4]*rho[k*P.n+(0)] ) / pow(P.dx,4.);
             //i = P.n-1:
             rhoPrime[k*P.n+(P.n-1)] = - ( wx[0]*rhoU[k*P.n+(P.n-3)] + wx[1]*rhoU[k*P.n+(P.n-2)]
             + wx[3]*rhoU[k*P.n+(0)] + wx[4]*rhoU[k*P.n+(1)] ) / P.dx
-            - std::abs( V.rhoU[k*P.n+(P.n-1)] / V.rho[k*P.n+(P.n-1)] ) * pow(P.dx,3.)/12.
+            - std::abs( u[k*P.n+(P.n-1)] ) * pow(P.dx,3.)/12.
             * ( whv[0]*rho[k*P.n+(P.n-3)] + whv[1]*rho[k*P.n+(P.n-2)] + whv[2]*rho[k*P.n+(P.n-1)]
             + whv[3]*rho[k*P.n+(0)] + whv[4]*rho[k*P.n+(0+1)] ) / pow(P.dx,4.);
         }
@@ -180,17 +184,17 @@ double rhoPrime[] ) {
     for( i = 0; i < P.n; i++ ) {
         //k = 0:
         rhoPrime[0*P.n+i] = rhoPrime[0*P.n+i] - ( rhoW[(0+1)*P.n+i] - -rhoW[(0)*P.n+i] ) / (2*P.dz)
-        + std::abs( V.rhoW[0*P.n+i] / V.rho[0*P.n+i] ) * P.dz/2.
+        + std::abs( w[0*P.n+i] ) * P.dz/2.
         * ( rho[(0)*P.n+i] - 2.*rho[0*P.n+i] + rho[(0+1)*P.n+i] ) / pow(P.dz,2.);
         //mid-range k:
         for( k = 1; k < P.nLev-1; k++ ) {
             rhoPrime[k*P.n+i] = rhoPrime[k*P.n+i] - ( rhoW[(k+1)*P.n+i] - rhoW[(k-1)*P.n+i] ) / (2*P.dz)
-            + std::abs( V.rhoW[k*P.n+i] / V.rho[k*P.n+i] ) * P.dz/2.
+            + std::abs( w[k*P.n+i] ) * P.dz/2.
             * ( rho[(k-1)*P.n+i] - 2.*rho[k*P.n+i] + rho[(k+1)*P.n+i] ) / pow(P.dz,2.);
         }
         //k = P.nLev-1:
         rhoPrime[(P.nLev-1)*P.n+i] = rhoPrime[(P.nLev-1)*P.n+i] - ( -rhoW[(P.nLev-1)*P.n+i] - rhoW[(P.nLev-2)*P.n+i] ) / (2*P.dz)
-        + std::abs( V.rhoW[(P.nLev-1)*P.n+i] / V.rho[(P.nLev-1)*P.n+i] ) * P.dz/2.
+        + std::abs( w[(P.nLev-1)*P.n+i] ) * P.dz/2.
         * ( rho[(P.nLev-2)*P.n+i] - 2.*rho[(P.nLev-1)*P.n+i] + rho[(P.nLev-1)*P.n+i] ) / pow(P.dz,2.);
     }
 }
@@ -200,6 +204,8 @@ const double rho[], const double rhoU[], const double rhoW[], const double rhoTh
 double rhoPrime[], double rhoUprime[], double rhoWprime[], double rhoThPrime[] ) {
     for( i = 0; i < P.N; i++ ) {
         p[i] = P.Po * pow( P.Rd * rhoTh[i] / P.Po, P.Cp / P.Cv );
+        u[i] = rhoU[i] / rho[i];
+        w[i] = rhoW[i] / rho[i];
     }
     //rho:
     singleVariableRHS( P, V, rho, rhoU, rhoW, rhoPrime );

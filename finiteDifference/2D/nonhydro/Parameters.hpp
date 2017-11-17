@@ -36,42 +36,38 @@ class Parameters {
 };
 
 Parameters::Parameters( const std::string& s ) {
+    t = 0;
     stenX = 5;
+    rkStages = 3;
     if( s == "risingBubble" ) {
         a = 0.;
         b = 10000.;
         c = 0.;
         d = 10000.;
-        n = 50;
-        nLev = 100;
-        rkStages = 3;
-        t = 0.;
-        dt = 1./4.;
-        nTimesteps = 6000;
-        saveDelta = 40;
+        n = int( (b-a) / 100. );
+        nLev = int( (d-c) / 50. );
+        dt = 1./8.;
+        nTimesteps = 12000;
+        saveDelta = 80;
     }
     else if( s == "inertiaGravityWaves" ) {
         a = 0.;
         b = 300000.;
         c = 0.;
         d = 10000.;
-        n = 600;
-        nLev = 80;
-        rkStages = 3;
-        t = 0.;
-        dt = 1./4.;
-        nTimesteps = 12000;
-        saveDelta = 80;
+        n = int( (b-a) / 500. );
+        nLev = int( (d-c) / 125. );
+        dt = 1./3.;
+        nTimesteps = 4500;
+        saveDelta = 60;
     }
     else if( s == "densityCurrent" ) {
         a = -25600.;
         b = 25600.;
         c = 0.;
         d = 6400.;
-        n = 512;
-        nLev = 64;
-        rkStages = 3;
-        t = 0.;
+        n = int( (b-a) / 100. );
+        nLev = int( (d-c) / 100. );
         dt = 1./4.;
         nTimesteps = 3600;
         saveDelta = 40;
@@ -81,10 +77,8 @@ Parameters::Parameters( const std::string& s ) {
         b = 36000;
         c = 0;
         d = 6400;
-        n = 360;
-        nLev = 64;
-        rkStages = 3;
-        t = 0.;
+        n = int( (b-a) / 100. );
+        nLev = int( (d-c) / 100. );
         dt = 1./6.;
         nTimesteps = 5400;
         saveDelta = 60;
