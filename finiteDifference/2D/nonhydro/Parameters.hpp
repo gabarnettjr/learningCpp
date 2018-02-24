@@ -45,10 +45,10 @@ Parameters::Parameters( const std::string& s ) {
         c = 0.;
         d = 10000.;
         n = int( (b-a) / 100. );
-        nLev = int( (d-c) / 50. );
-        dt = 1./8.;
-        nTimesteps = 12000;
-        saveDelta = 80;
+        nLev = int( (d-c) / 100. );
+        dt = 1./4.;
+        nTimesteps = 6000;
+        saveDelta = 400;
     }
     else if( s == "inertiaGravityWaves" ) {
         a = 0.;

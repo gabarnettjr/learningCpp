@@ -1,0 +1,13 @@
+rm *.txt
+cd rho
+rm *.txt
+cd ..
+cd rhoU
+rm *.txt
+cd ..
+cd rhoW
+rm *.txt
+cd ..
+cd rhoTh
+rm *.txt
+cd ..
