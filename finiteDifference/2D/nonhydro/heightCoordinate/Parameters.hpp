@@ -11,10 +11,11 @@ class Parameters {
         Parameters( const std::string& );
         
         int stenX;              //stencil-size for centered lateral approximations (3 or 5)
+        int stenZ;              //stencil-size for vertical approximations (only 3 for now)
         
         double a;               //left endpoint
         double b;               //right endpoint
-        double c;               //bottom endpoint
+        double c;               //bottom endpoint (may be overwritten by topography)
         double d;               //top endpoint
         int n;                  //degrees of freedom (nodes) per level
         int nLev;               //number of levels (layers)
@@ -26,7 +27,6 @@ class Parameters {
         
         int N;                  //total number of degrees of freedom
         double dx;              //lateral spacing
-        double dz;              //vertical spacing
         
         double Po = 100000.;    //reference pressure near bottom of domain
         double Rd = 287.04;     //gas constant for dry air
@@ -35,22 +35,23 @@ class Parameters {
         double g = 9.81;        //gravitational acceleration
 };
 
-Parameters::Parameters( const std::string& s ) {
+Parameters::Parameters( const std::string& st ) {
     t = 0;
     stenX = 5;
+    stenZ = 3;
     rkStages = 3;
-    if( s == "risingBubble" ) {
+    if( st == "risingBubble" ) {
         a = 0.;
         b = 10000.;
         c = 0.;
         d = 10000.;
-        n = int( (b-a) / 100. );
-        nLev = int( (d-c) / 50. );
-        dt = 1./8.;
-        nTimesteps = 12000;
+        n = int( (b-a) / 200. );
+        nLev = int( (d-c) / 100. );
+        dt = 1./4.;
+        nTimesteps = 6000;
         saveDelta = 80;
     }
-    else if( s == "inertiaGravityWaves" ) {
+    else if( st == "inertiaGravityWaves" ) {
         a = 0.;
         b = 300000.;
         c = 0.;
@@ -61,7 +62,7 @@ Parameters::Parameters( const std::string& s ) {
         nTimesteps = 4500;
         saveDelta = 60;
     }
-    else if( s == "densityCurrent" ) {
+    else if( st == "densityCurrent" ) {
         a = -25600.;
         b = 25600.;
         c = 0.;
@@ -72,7 +73,7 @@ Parameters::Parameters( const std::string& s ) {
         nTimesteps = 3600;
         saveDelta = 40;
     }
-    else if ( s == "movingDensityCurrent" ) {
+    else if ( st == "movingDensityCurrent" ) {
         a = 0.;
         b = 36000;
         c = 0;
@@ -84,12 +85,11 @@ Parameters::Parameters( const std::string& s ) {
         saveDelta = 60;
     }
     else {
-        std::cerr << "Error: Invalid test case string s.";
+        std::cerr << "Error: Invalid test case string st.";
         std::exit( EXIT_FAILURE );
     }
     N = n * nLev;
     dx = (b-a)/n;
-    dz = (d-c)/nLev;
 }
 
 #endif

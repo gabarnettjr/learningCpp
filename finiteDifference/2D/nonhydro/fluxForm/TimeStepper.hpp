@@ -44,7 +44,6 @@ class TimeStepper {
         int i, j, k;        //used in for-loops
         double* wx;         //first derivative weights
         double* whv;        //hyperviscosity weights
-        double gamma;       //HV coefficient (vertical only, for now)
         double* u;          //temporary horizontal velocity array
         double* w;          //temporary vertical velocity array
         
@@ -58,9 +57,6 @@ class TimeStepper {
 };
 
 TimeStepper::TimeStepper( const Parameters& P, Variables& V ) {
-    
-    //temporary pressure variable:
-    p = new double[P.N];
     
     //arrays needed for RK time stepping:
     s1_rho    = new double[P.N];
@@ -111,7 +107,9 @@ TimeStepper::TimeStepper( const Parameters& P, Variables& V ) {
         whv[3] = -4.;
         whv[4] = 1.;
     }
-    gamma = .1;
+    
+    //temporary pressure and velocity variables:
+    p = new double[P.N];
     u = new double[P.N];
     w = new double[P.N];
 }
@@ -180,22 +178,28 @@ double rhoPrime[] ) {
         std::cerr << "Error: stenX should be 3 or 5.";
         std::exit( EXIT_FAILURE );
     }
-    //vertical operations using FD2:
-    for( i = 0; i < P.n; i++ ) {
-        //k = 0:
-        rhoPrime[0*P.n+i] = rhoPrime[0*P.n+i] - ( rhoW[(0+1)*P.n+i] - -rhoW[(0)*P.n+i] ) / (2*P.dz)
-        + std::abs( w[0*P.n+i] ) * P.dz/2.
-        * ( rho[(0)*P.n+i] - 2.*rho[0*P.n+i] + rho[(0+1)*P.n+i] ) / pow(P.dz,2.);
-        //mid-range k:
-        for( k = 1; k < P.nLev-1; k++ ) {
-            rhoPrime[k*P.n+i] = rhoPrime[k*P.n+i] - ( rhoW[(k+1)*P.n+i] - rhoW[(k-1)*P.n+i] ) / (2*P.dz)
-            + std::abs( w[k*P.n+i] ) * P.dz/2.
-            * ( rho[(k-1)*P.n+i] - 2.*rho[k*P.n+i] + rho[(k+1)*P.n+i] ) / pow(P.dz,2.);
+    //vertical operations using FD:
+    if( P.stenZ == 3 ) {
+        for( i = 0; i < P.n; i++ ) {
+            //k = 0:
+            rhoPrime[i] = rhoPrime[i] - ( rhoW[P.n+i] + rhoW[i] ) / (2*P.dz)
+            + std::abs( w[i] ) * P.dz/2.
+            * ( rho[i] - 2.*rho[i] + rho[P.n+i] ) / pow(P.dz,2.);
+            //mid-range k:
+            for( k = 1; k < P.nLev-1; k++ ) {
+                rhoPrime[k*P.n+i] = rhoPrime[k*P.n+i] - ( rhoW[(k+1)*P.n+i] - rhoW[(k-1)*P.n+i] ) / (2*P.dz)
+                + std::abs( w[k*P.n+i] ) * P.dz/2.
+                * ( rho[(k-1)*P.n+i] - 2.*rho[k*P.n+i] + rho[(k+1)*P.n+i] ) / pow(P.dz,2.);
+            }
+            //k = P.nLev-1:
+            rhoPrime[(P.nLev-1)*P.n+i] = rhoPrime[(P.nLev-1)*P.n+i] - ( -rhoW[(P.nLev-1)*P.n+i] - rhoW[(P.nLev-2)*P.n+i] ) / (2*P.dz)
+            + std::abs( w[(P.nLev-1)*P.n+i] ) * P.dz/2.
+            * ( rho[(P.nLev-2)*P.n+i] - 2.*rho[(P.nLev-1)*P.n+i] + rho[(P.nLev-1)*P.n+i] ) / pow(P.dz,2.);
         }
-        //k = P.nLev-1:
-        rhoPrime[(P.nLev-1)*P.n+i] = rhoPrime[(P.nLev-1)*P.n+i] - ( -rhoW[(P.nLev-1)*P.n+i] - rhoW[(P.nLev-2)*P.n+i] ) / (2*P.dz)
-        + std::abs( w[(P.nLev-1)*P.n+i] ) * P.dz/2.
-        * ( rho[(P.nLev-2)*P.n+i] - 2.*rho[(P.nLev-1)*P.n+i] + rho[(P.nLev-1)*P.n+i] ) / pow(P.dz,2.);
+    }
+    else {
+        std::cerr << "Error: stenZ should be 3.";
+        std::exit( EXIT_FAILURE );
     }
 }
 
@@ -203,7 +207,7 @@ inline void TimeStepper::odeFun( const Parameters& P, const Variables& V,
 const double rho[], const double rhoU[], const double rhoW[], const double rhoTh[],
 double rhoPrime[], double rhoUprime[], double rhoWprime[], double rhoThPrime[] ) {
     for( i = 0; i < P.N; i++ ) {
-        p[i] = P.Po * pow( P.Rd * rhoTh[i] / P.Po, P.Cp / P.Cv );
+        p[i] = P.Po * pow( P.Rd*rhoTh[i]/P.Po, P.Cp/P.Cv );
         u[i] = rhoU[i] / rho[i];
         w[i] = rhoW[i] / rho[i];
     }
@@ -211,13 +215,13 @@ double rhoPrime[], double rhoUprime[], double rhoWprime[], double rhoThPrime[] )
     singleVariableRHS( P, V, rho, rhoU, rhoW, rhoPrime );
     //rhoU:
     for( i = 0; i < P.N; i++ ) {
-        F[i] = rhoU[i] * rhoU[i] / rho[i] + p[i];
-        G[i] = rhoU[i] * rhoW[i] / rho[i];
+        F[i] = rhoU[i] * u[i] + p[i];
+        G[i] = rhoU[i] * w[i];
     }
     singleVariableRHS( P, V, rhoU, F, G, rhoUprime );
     //rhoW:
     for( i = 0; i < P.N; i++ ) {
-        F[i] = rhoW[i] * rhoW[i] / rho[i];
+        F[i] = rhoW[i] * w[i];
     }
     singleVariableRHS( P, V, rhoW, G, F, rhoWprime );
     for( i = 0; i < P.n; i++ ) {
@@ -237,8 +241,9 @@ double rhoPrime[], double rhoUprime[], double rhoWprime[], double rhoThPrime[] )
     }
     //rhoTh:
     for( i = 0; i < P.N; i++ ) {
-        F[i] = rhoU[i] * rhoTh[i] / rho[i];
-        G[i] = rhoW[i] * rhoTh[i] / rho[i];
+        tmpD = rhoTh[i] / rho[i];
+        F[i] = rhoU[i] * tmpD;
+        G[i] = rhoW[i] * tmpD;
     }
     singleVariableRHS( P, V, rhoTh, F, G, rhoThPrime );
 }

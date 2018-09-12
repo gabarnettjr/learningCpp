@@ -10,7 +10,7 @@ int main()
     const double epsilon = .0000001;
     
     double root = bisect( xLeft, xRight, epsilon );
-    double exact = sqrt(3.);
+    double exact = sqrt(2.);
 
     int pr = 10;
 

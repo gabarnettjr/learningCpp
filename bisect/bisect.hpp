@@ -18,7 +18,7 @@ double bisect( double xLeft, double xRight, const double& epsilon ) {
     else {
         xMid = bisect( xMid, xRight, epsilon );
     }
-    std::cout << "(" << std::setprecision(10) << std::setw(12) << xLeft << ", " << xRight << ")" << std::endl;
+    std::cout << "(" << std::setprecision(10) << std::setw(12) << xLeft << ", " << xRight << " )" << std::endl;
     return xMid;
 }
 

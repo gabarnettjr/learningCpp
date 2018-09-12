@@ -32,7 +32,7 @@
 int main()
 {
     //choose which test case to do with this string (see Parameters.hpp for choices)
-    const std::string s( "inertiaGravityWaves" );
+    const std::string s( "risingBubble" );
     
     //Initialize parameters based on test case:
     const Parameters P( s );

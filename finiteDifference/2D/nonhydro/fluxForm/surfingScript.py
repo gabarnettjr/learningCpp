@@ -24,7 +24,7 @@ saveDelta = int( numpy.loadtxt( "saveDelta.txt" ) )    #number of timesteps betw
 
 ###########################################################################
 
-plotDelta = 1  * saveDelta                             #number of timesteps between plots
+plotDelta = 5 * saveDelta                              #number of timesteps between plots
 a = min(x)
 b = max(x)
 dx = x[1] - x[0]
@@ -36,7 +36,7 @@ nLev = len(z)
 xx = numpy.tile( x, (nLev,1) )
 zz = numpy.transpose( numpy.tile( z, (n,1) ) )
 
-var = "w"                                     #choose which variable to look at
+var = "thetaPrime"                                     #choose which variable to look at
 
 for i in numpy.arange(0,nTimesteps+1,plotDelta) :
 
@@ -87,14 +87,14 @@ for i in numpy.arange(0,nTimesteps+1,plotDelta) :
         elif s == "inertiaGravityWaves" :
             cv = numpy.arange( -.01, .0101, .001 )
     
-    approx = numpy.reshape( tmp, (nLev,n) )
+    tmp = numpy.reshape( tmp, (nLev,n) )
     
     if i != 0 :
         t = t + plotDelta*dt
-    plt.contourf( xx, zz, approx, cv )
+    plt.contourf( xx, zz, tmp, cv )
     
     plt.axis( [a,b,c,d] )
-    plt.title( 'numerical solution, t = {0:02.3f}'.format(t) )
+    plt.title( 'numerical solution, t = {0:02.0f}'.format(t) )
     plt.colorbar()
     plt.waitforbuttonpress()
     plt.clf()
