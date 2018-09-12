@@ -38,6 +38,8 @@ zz = numpy.transpose( numpy.tile( z, (n,1) ) )
 
 var = "thetaPrime"                                     #choose which variable to look at
 
+fig = plt.figure()
+
 for i in numpy.arange(0,nTimesteps+1,plotDelta) :
 
     if var == "thetaPrime" :
@@ -96,5 +98,5 @@ for i in numpy.arange(0,nTimesteps+1,plotDelta) :
     plt.axis( [a,b,c,d] )
     plt.title( 'numerical solution, t = {0:02.0f}'.format(t) )
     plt.colorbar()
-    plt.waitforbuttonpress()
+    fig.savefig( './pngs/'+'{0:04d}'.format(numpy.int(numpy.round(t)+1e-12))+'.png', bbox_inches = 'tight' )
     plt.clf()
